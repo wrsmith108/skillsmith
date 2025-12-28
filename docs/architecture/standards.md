@@ -1,6 +1,6 @@
 # Engineering Standards - Skillsmith
 
-**Version**: 1.2
+**Version**: 1.3
 **Status**: Active
 **Owner**: Skillsmith Team
 
@@ -222,6 +222,64 @@ A task is complete when:
 - [ ] Code reviewed and approved
 - [ ] Linear issue updated
 
+### 3.5 Session Management (SMI-638, SMI-641)
+
+**Checkpoint progress to claude-flow memory** to enable recovery from session stalls.
+
+```bash
+# At start of work session
+npx claude-flow@alpha hooks pre-task --description "Starting SMI-XXX"
+
+# After each file completion
+npx claude-flow@alpha hooks post-edit --file "path/to/file.ts" \
+  --memory-key "session/smi-xxx/files"
+
+# At end of session
+npx claude-flow@alpha hooks post-task --task-id "smi-xxx"
+```
+
+**Rules:**
+- Store session ID in memory at work start
+- Checkpoint after each major file creation
+- Enable session restore via `hooks session-restore`
+
+### 3.6 Incremental Verification (SMI-639)
+
+**Run typecheck after each new file**, not just at completion.
+
+```bash
+# After creating a new .ts file
+npm run typecheck
+
+# If errors, fix before proceeding
+# Don't accumulate errors for end-of-task fixing
+```
+
+**Rules:**
+- Typecheck after each new TypeScript file
+- Run tests after each test file creation
+- Address errors immediately, not at end
+
+### 3.7 Linear Integration (SMI-640)
+
+**Update Linear issues during development**, not just at completion.
+
+| Event | Linear Action |
+|-------|---------------|
+| Starting work | Move issue to "In Progress" |
+| Major milestone | Add comment with progress |
+| Blocked | Add blocker comment |
+| Completion | Move to "Done" + summary comment |
+
+**Automation via hooks:**
+```bash
+# Move issue to In Progress when starting
+npx claude-flow@alpha hooks notify --message "Starting SMI-XXX"
+
+# Add progress comment
+npx claude-flow@alpha hooks notify --message "Completed: SkillParser.ts"
+```
+
 ---
 
 ## 4. Security Standards
@@ -311,6 +369,7 @@ All MCP tools return structured error responses:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.3 | 2025-12-28 | Added §3.5-3.7 Session Management, Incremental Verification, Linear Integration (from Phase 2a retro) |
 | 1.2 | 2025-12-27 | Updated §3.3 CI/CD Pipeline with compliance gate and job diagram |
 | 1.1 | 2025-12-27 | Added §3.0 Docker-First Development requirement |
 | 1.0 | 2025-12-27 | Initial standards for Phase 0 completion |

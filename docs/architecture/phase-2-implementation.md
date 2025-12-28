@@ -1,8 +1,8 @@
 # Phase 2 Implementation Plan
 
-**Version**: 1.0
-**Status**: Ready
-**Last Updated**: 2025-12-27
+**Version**: 1.1
+**Status**: Active (Phase 2a Complete)
+**Last Updated**: 2025-12-28
 
 ## Overview
 
@@ -17,16 +17,37 @@ Phase 2 implements core skill discovery functionality with technical risk mitiga
 
 ## Linear Issues
 
-| Priority | Issue | Title | Risk Mitigation |
-|----------|-------|-------|-----------------|
-| P0 | SMI-627 | Core search implementation | Neural patterns, memory caching |
-| P0 | SMI-628 | GitHub skill indexing | Swarm coordination, rate limiting |
-| P1 | SMI-629 | Ranking algorithm | Neural prediction |
-| P1 | SMI-630 | Cache invalidation | Memory TTL |
-| P1 | SMI-631 | E2E tests | - |
-| P2 | SMI-632 | Performance benchmarks | Bottleneck analysis |
-| P2 | SMI-633 | VS Code extension | - |
-| Process | SMI-634 | Swarm improvements | - |
+### Core Features (Original)
+
+| Priority | Issue | Title | Status | Risk Mitigation |
+|----------|-------|-------|--------|-----------------|
+| P0 | SMI-627 | Core search implementation | In Progress | Neural patterns, memory caching |
+| P0 | SMI-628 | GitHub skill indexing | ✅ Done | Swarm coordination, rate limiting |
+| P1 | SMI-629 | Ranking algorithm | Todo | Neural prediction |
+| P1 | SMI-630 | Cache invalidation | Todo | Memory TTL |
+| P1 | SMI-631 | E2E tests | Todo | - |
+| P2 | SMI-632 | Performance benchmarks | Todo | Bottleneck analysis |
+| P2 | SMI-633 | VS Code extension | Todo | - |
+| Process | SMI-634 | Swarm improvements | Todo | - |
+
+### Technical Enhancements (Added from Phase 2a Retro)
+
+| Priority | Issue | Title | Dependencies |
+|----------|-------|-------|--------------|
+| P1 | SMI-642 | Vector embeddings for semantic search | SMI-627 |
+| P1 | SMI-643 | Swarm coordination for parallel indexing | SMI-628 ✅ |
+| P1 | SMI-644 | Tiered cache layer with TTL | SMI-627 |
+| P2 | SMI-645 | GitHub webhook support | SMI-628 ✅ |
+| P2 | SMI-646 | Skill dependency graph | SMI-628 ✅ |
+
+### Process Improvements (Added from Phase 2a Retro)
+
+| Issue | Title | Purpose |
+|-------|-------|---------|
+| SMI-638 | Session checkpointing to memory | Prevent data loss on session stall |
+| SMI-639 | Incremental typecheck verification | Catch errors early |
+| SMI-640 | Linear updates during development | Real-time progress tracking |
+| SMI-641 | Session ID storage for recovery | Enable context restoration |
 
 ## Technical Risk Mitigations
 
@@ -344,8 +365,52 @@ User Query
 - SQLite with FTS5 extension
 - onnxruntime for embeddings
 
+## Phase 2a Completion Summary
+
+**SMI-628: GitHub Skill Indexing** - Completed December 28, 2025
+
+### Deliverables
+
+| File | Purpose | Lines |
+|------|---------|-------|
+| `packages/core/src/indexer/SkillParser.ts` | YAML frontmatter parsing | ~300 |
+| `packages/core/src/indexer/GitHubIndexer.ts` | GitHub API integration | ~500 |
+| `packages/core/src/indexer/index.ts` | Module exports | ~20 |
+| `packages/core/src/repositories/IndexerRepository.ts` | Database operations | ~350 |
+| `packages/core/tests/GitHubIndexer.test.ts` | Test suite | ~500 |
+
+### Key Implementation Details
+
+- **Rate Limiting**: 150ms minimum delay between API calls
+- **Retry Logic**: Exponential backoff up to 30s, 3 max retries
+- **Change Detection**: SHA-based for incremental updates
+- **Quality Scoring**: 0-1 normalized based on metadata completeness
+- **Trust Tiers**: verified, community, experimental, unknown
+
+### Tests
+
+| Suite | Tests | Status |
+|-------|-------|--------|
+| SkillParser | 12 | ✅ Pass |
+| GitHubIndexer | 8 | ✅ Pass |
+| IndexerRepository | 12 | ✅ Pass |
+| Integration | 1 | ⏭️ Skip (requires token) |
+| **Total** | **33** | ✅ All Pass |
+
+### Learnings Applied
+
+Issues SMI-638 through SMI-646 were created based on Phase 2a learnings:
+- Session stall recovery needs improvement
+- Incremental verification catches errors earlier
+- Linear integration during development improves tracking
+
+See [Phase 2a Retrospective](../retros/phase-2a-github-indexing.md) for full details.
+
+---
+
 ## References
 
 - [ADR-003: Claude-flow Integration](../adr/003-claude-flow-integration.md)
 - [Engineering Standards](./standards.md)
 - [Phase 1 Retrospective](../retros/phase-1-ci-testing.md)
+- [Phase 2a Retrospective](../retros/phase-2a-github-indexing.md)
