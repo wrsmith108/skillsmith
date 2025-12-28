@@ -1,7 +1,7 @@
 # Phase 2 Implementation Plan
 
-**Version**: 1.0
-**Status**: Ready
+**Version**: 1.2
+**Status**: Active (Phase 2b Complete)
 **Last Updated**: 2025-12-27
 
 ## Overview
@@ -17,16 +17,37 @@ Phase 2 implements core skill discovery functionality with technical risk mitiga
 
 ## Linear Issues
 
-| Priority | Issue | Title | Risk Mitigation |
-|----------|-------|-------|-----------------|
-| P0 | SMI-627 | Core search implementation | Neural patterns, memory caching |
-| P0 | SMI-628 | GitHub skill indexing | Swarm coordination, rate limiting |
-| P1 | SMI-629 | Ranking algorithm | Neural prediction |
-| P1 | SMI-630 | Cache invalidation | Memory TTL |
-| P1 | SMI-631 | E2E tests | - |
-| P2 | SMI-632 | Performance benchmarks | Bottleneck analysis |
-| P2 | SMI-633 | VS Code extension | - |
-| Process | SMI-634 | Swarm improvements | - |
+### Core Features (Original)
+
+| Priority | Issue | Title | Status | Risk Mitigation |
+|----------|-------|-------|--------|-----------------|
+| P0 | SMI-627 | Core search implementation | In Progress | Neural patterns, memory caching |
+| P0 | SMI-628 | GitHub skill indexing | ✅ Done | Swarm coordination, rate limiting |
+| P1 | SMI-629 | Ranking algorithm | ✅ Done | Neural prediction |
+| P1 | SMI-630 | Cache invalidation | ✅ Done | Memory TTL |
+| P1 | SMI-631 | E2E tests | ✅ Done | TDD security fixes |
+| P2 | SMI-632 | Performance benchmarks | Todo | Bottleneck analysis |
+| P2 | SMI-633 | VS Code extension | Todo | - |
+| Process | SMI-634 | Swarm improvements | ✅ Done | TDD security fixes |
+
+### Technical Enhancements (Added from Phase 2a Retro)
+
+| Priority | Issue | Title | Dependencies | Status |
+|----------|-------|-------|--------------|--------|
+| P1 | SMI-642 | Vector embeddings for semantic search | SMI-627 | ✅ Done (security fixed) |
+| P1 | SMI-643 | Swarm coordination for parallel indexing | SMI-628 ✅ | Todo |
+| P1 | SMI-644 | Tiered cache layer with TTL | SMI-627 | Todo |
+| P2 | SMI-645 | GitHub webhook support | SMI-628 ✅ | Todo |
+| P2 | SMI-646 | Skill dependency graph | SMI-628 ✅ | Todo |
+
+### Process Improvements (Added from Phase 2a Retro)
+
+| Issue | Title | Purpose | Status |
+|-------|-------|---------|--------|
+| SMI-638 | Session checkpointing to memory | Prevent data loss on session stall | ✅ Done (security fixed) |
+| SMI-639 | Incremental typecheck verification | Catch errors early | Todo |
+| SMI-640 | Linear updates during development | Real-time progress tracking | Todo |
+| SMI-641 | Session ID storage for recovery | Enable context restoration | Todo |
 
 ## Technical Risk Mitigations
 
@@ -344,8 +365,107 @@ User Query
 - SQLite with FTS5 extension
 - onnxruntime for embeddings
 
+## Phase 2a Completion Summary
+
+**SMI-628: GitHub Skill Indexing** - Completed December 28, 2025
+
+### Deliverables
+
+| File | Purpose | Lines |
+|------|---------|-------|
+| `packages/core/src/indexer/SkillParser.ts` | YAML frontmatter parsing | ~300 |
+| `packages/core/src/indexer/GitHubIndexer.ts` | GitHub API integration | ~500 |
+| `packages/core/src/indexer/index.ts` | Module exports | ~20 |
+| `packages/core/src/repositories/IndexerRepository.ts` | Database operations | ~350 |
+| `packages/core/tests/GitHubIndexer.test.ts` | Test suite | ~500 |
+
+### Key Implementation Details
+
+- **Rate Limiting**: 150ms minimum delay between API calls
+- **Retry Logic**: Exponential backoff up to 30s, 3 max retries
+- **Change Detection**: SHA-based for incremental updates
+- **Quality Scoring**: 0-1 normalized based on metadata completeness
+- **Trust Tiers**: verified, community, experimental, unknown
+
+### Tests
+
+| Suite | Tests | Status |
+|-------|-------|--------|
+| SkillParser | 12 | ✅ Pass |
+| GitHubIndexer | 8 | ✅ Pass |
+| IndexerRepository | 12 | ✅ Pass |
+| Integration | 1 | ⏭️ Skip (requires token) |
+| **Total** | **33** | ✅ All Pass |
+
+### Learnings Applied
+
+Issues SMI-638 through SMI-646 were created based on Phase 2a learnings:
+- Session stall recovery needs improvement
+- Incremental verification catches errors earlier
+- Linear integration during development improves tracking
+
+See [Phase 2a Retrospective](../retros/phase-2a-github-indexing.md) for full details.
+
+---
+
+## Phase 2b Completion Summary
+
+**Phase 2b: TDD Security Fixes** - Completed December 27, 2025
+
+### Issues Completed
+
+| Issue | Title | Tests | Branch |
+|-------|-------|-------|--------|
+| SMI-629 | Ranking algorithm | 140 | phase-2b |
+| SMI-630 | Cache invalidation | 162 | phase-2b-parallel |
+| SMI-631 | E2E tests | 279+27 | phase-2b |
+| SMI-634 | Swarm coordination | 52 | phase-2b-swarm |
+| SMI-638 | Session checkpointing | 48 | phase-2b-process |
+| SMI-642 | Vector embeddings | 209 | phase-2b-parallel |
+
+### Security Fixes Applied (TDD)
+
+All issues underwent code review with 18 sub-issues created for security/quality improvements:
+
+| Category | Critical | Major | Total Fixed |
+|----------|----------|-------|-------------|
+| SMI-642 | 1 (SQL injection) | 3 | 4 |
+| SMI-638 | 3 (cmd injection, prototype pollution, env exposure) | 4 | 7 |
+| SMI-631 | 0 | 2 | 2 |
+| SMI-634 | 1 (circular deps) | 4 | 5 |
+| **Total** | **5** | **13** | **18** |
+
+### New Components
+
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| VectorStore | `packages/core/src/embeddings/VectorStore.ts` | Secure vector storage with SQL injection prevention |
+| SessionCheckpoint | `packages/core/src/session/SessionCheckpoint.ts` | Safe session checkpointing |
+| CheckpointManager | `packages/core/src/session/CheckpointManager.ts` | Mutex-protected checkpoint management |
+| SwarmCoordinator | `packages/core/src/swarm/SwarmCoordinator.ts` | Multi-agent coordination with cycle detection |
+| TaskQueue | `packages/core/src/swarm/TaskQueue.ts` | Priority task queue with dependency tracking |
+| AgentState | `packages/core/src/swarm/AgentState.ts` | Agent state management |
+| E2E Test Suite | `packages/core/tests/e2e/` | End-to-end testing infrastructure |
+| Similarity Utils | `packages/core/src/embeddings/similarity.ts` | Shared vector similarity functions |
+
+### Verification Results
+
+| Check | Status |
+|-------|--------|
+| Security Scan | ✅ No high severity vulnerabilities |
+| Compliance Audit | ✅ 88% all worktrees |
+| Unit Tests | ✅ 800+ tests passing |
+| Typecheck | ✅ Core packages clean |
+| Git Push | ✅ 4 branches pushed |
+
+See [Phase 2b Retrospective](../retros/phase-2b-tdd-security.md) for full details.
+
+---
+
 ## References
 
 - [ADR-003: Claude-flow Integration](../adr/003-claude-flow-integration.md)
 - [Engineering Standards](./standards.md)
 - [Phase 1 Retrospective](../retros/phase-1-ci-testing.md)
+- [Phase 2a Retrospective](../retros/phase-2a-github-indexing.md)
+- [Phase 2b Retrospective](../retros/phase-2b-tdd-security.md)

@@ -1,6 +1,6 @@
 # Engineering Standards - Skillsmith
 
-**Version**: 1.2
+**Version**: 1.4
 **Status**: Active
 **Owner**: Skillsmith Team
 
@@ -262,6 +262,64 @@ A task is complete when:
 - [ ] Code reviewed and approved
 - [ ] Linear issue updated
 
+### 3.5 Session Management (SMI-638, SMI-641)
+
+**Checkpoint progress to claude-flow memory** to enable recovery from session stalls.
+
+```bash
+# At start of work session
+npx claude-flow@alpha hooks pre-task --description "Starting SMI-XXX"
+
+# After each file completion
+npx claude-flow@alpha hooks post-edit --file "path/to/file.ts" \
+  --memory-key "session/smi-xxx/files"
+
+# At end of session
+npx claude-flow@alpha hooks post-task --task-id "smi-xxx"
+```
+
+**Rules:**
+- Store session ID in memory at work start
+- Checkpoint after each major file creation
+- Enable session restore via `hooks session-restore`
+
+### 3.6 Incremental Verification (SMI-639)
+
+**Run typecheck after each new file**, not just at completion.
+
+```bash
+# After creating a new .ts file
+npm run typecheck
+
+# If errors, fix before proceeding
+# Don't accumulate errors for end-of-task fixing
+```
+
+**Rules:**
+- Typecheck after each new TypeScript file
+- Run tests after each test file creation
+- Address errors immediately, not at end
+
+### 3.7 Linear Integration (SMI-640)
+
+**Update Linear issues during development**, not just at completion.
+
+| Event | Linear Action |
+|-------|---------------|
+| Starting work | Move issue to "In Progress" |
+| Major milestone | Add comment with progress |
+| Blocked | Add blocker comment |
+| Completion | Move to "Done" + summary comment |
+
+**Automation via hooks:**
+```bash
+# Move issue to In Progress when starting
+npx claude-flow@alpha hooks notify --message "Starting SMI-XXX"
+
+# Add progress comment
+npx claude-flow@alpha hooks notify --message "Completed: SkillParser.ts"
+```
+
 ---
 
 ## 4. Security Standards
@@ -279,6 +337,163 @@ Skillsmith includes security scanning for installed skills:
 - Check for suspicious patterns (exfiltration, injection)
 - Warn about unverified skills
 - Trust tier system (verified, community, experimental)
+
+### 4.3 Input Validation (Added from Phase 2b)
+
+**All user input must be validated before use:**
+
+| Input Type | Validation Pattern | Example |
+|------------|-------------------|---------|
+| Table names | `/^[a-zA-Z_][a-zA-Z0-9_]*$/` | Prevent SQL injection |
+| File paths | No `..`, null bytes, shell chars | Prevent path traversal |
+| JSON data | Schema validation (Zod) | Prevent prototype pollution |
+| Shell args | Array-based, never interpolate | Prevent command injection |
+
+**SQL Injection Prevention:**
+```typescript
+// ❌ NEVER: String interpolation in SQL
+this.db.exec(`CREATE TABLE ${userInput}`)
+
+// ✅ ALWAYS: Validate table names
+private validateTableName(name: string): string {
+  if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
+    throw new Error('Invalid table name');
+  }
+  return name;
+}
+```
+
+**Command Injection Prevention:**
+```typescript
+// ❌ NEVER: exec with string interpolation
+exec(`npx some-cmd --data '${userInput}'`)
+
+// ✅ ALWAYS: execFile with array args
+execFile('npx', ['some-cmd', '--file', tempFile])
+```
+
+### 4.4 Prototype Pollution Prevention
+
+**Validate JSON before parsing:**
+```typescript
+// Check for dangerous keys before JSON.parse
+const POLLUTION_PATTERN = /"(__proto__|prototype|constructor)"\s*:/gi;
+if (POLLUTION_PATTERN.test(json)) {
+  throw new Error('Prototype pollution attempt detected');
+}
+
+// Or use schema validation
+import { z } from 'zod';
+const schema = z.object({ /* ... */ });
+const data = schema.parse(JSON.parse(json));
+```
+
+### 4.5 Subprocess Security
+
+**Rules for spawning subprocesses:**
+
+| Rule | Implementation |
+|------|----------------|
+| Minimal env vars | Only pass `PATH`, not `process.env` |
+| No shell | Set `shell: false` in spawn options |
+| Timeouts | Use `AbortController` with 30s limit |
+| Cleanup | Track processes, kill on exit |
+
+```typescript
+// Secure subprocess spawning
+const controller = new AbortController();
+const timeout = setTimeout(() => controller.abort(), 30000);
+
+try {
+  await execFile('cmd', args, {
+    env: { PATH: process.env.PATH },
+    shell: false,
+    signal: controller.signal
+  });
+} finally {
+  clearTimeout(timeout);
+}
+```
+
+### 4.6 Secure Temp File Handling
+
+```typescript
+import { mkdtemp, writeFile, rm } from 'fs/promises';
+import { tmpdir } from 'os';
+import { join } from 'path';
+
+// Create unique temp directory
+const dir = await mkdtemp(join(tmpdir(), 'skillsmith-'));
+const file = join(dir, 'data.json');
+
+// Write with restricted permissions (owner only)
+await writeFile(file, content, { mode: 0o600 });
+
+// Always cleanup in finally block
+try {
+  // use file
+} finally {
+  await rm(dir, { recursive: true, force: true });
+}
+```
+
+### 4.7 Concurrency Safety
+
+**Prevent race conditions with mutex:**
+```typescript
+import { Mutex } from 'async-mutex';
+
+class SafeService {
+  private mutex = new Mutex();
+
+  async criticalOperation(): Promise<void> {
+    const release = await this.mutex.acquire();
+    try {
+      // Protected operation
+    } finally {
+      release();
+    }
+  }
+}
+```
+
+**Detect circular dependencies:**
+```typescript
+// DFS-based cycle detection for task dependencies
+private detectCycle(taskId: string, deps: string[]): void {
+  const visited = new Set<string>();
+  const path = new Set<string>();
+
+  const hasCycle = (id: string): boolean => {
+    if (path.has(id)) return true;
+    if (visited.has(id)) return false;
+    visited.add(id);
+    path.add(id);
+    // Check dependencies recursively
+    path.delete(id);
+    return false;
+  };
+
+  for (const dep of deps) {
+    if (hasCycle(dep)) throw new Error('Circular dependency');
+  }
+}
+```
+
+### 4.8 Cryptographic Standards
+
+```typescript
+import { randomUUID, createHash } from 'crypto';
+
+// ❌ NEVER: Math.random() for IDs
+const id = `item-${Math.random()}`;
+
+// ✅ ALWAYS: crypto.randomUUID()
+const id = `item-${randomUUID()}`;
+
+// For content hashing
+const hash = createHash('sha256').update(content).digest('hex');
+```
 
 ---
 
@@ -351,6 +566,8 @@ All MCP tools return structured error responses:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.4 | 2025-12-27 | Added §4.3-4.8 Security Standards (input validation, prototype pollution, subprocess security, temp files, concurrency, crypto) from Phase 2b TDD |
+| 1.3 | 2025-12-28 | Added §3.5-3.7 Session Management, Incremental Verification, Linear Integration (from Phase 2a retro) |
 | 1.2 | 2025-12-27 | Updated §3.3 CI/CD Pipeline with compliance gate and job diagram |
 | 1.1 | 2025-12-27 | Added §3.0 Docker-First Development requirement |
 | 1.0 | 2025-12-27 | Initial standards for Phase 0 completion |
