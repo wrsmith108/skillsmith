@@ -13,6 +13,9 @@ ADRs document significant architectural decisions made during the project. They 
 | [ADR-001](001-monorepo-structure.md) | Monorepo Structure with npm Workspaces | Accepted | 2025-12-27 |
 | [ADR-002](002-docker-glibc-requirement.md) | Docker with glibc for Native Module Compatibility | Accepted | 2025-12-27 |
 | [ADR-003](003-claude-flow-integration.md) | Claude-flow Integration for Technical Risk Mitigation | Accepted | 2025-12-27 |
+| [ADR-004](004-docker-guard-hook.md) | Docker Guard Hook for Daemon Timeout Protection | Accepted | 2025-12-28 |
+| [ADR-005](005-vscode-mcp-client.md) | VS Code Extension MCP Client Architecture | Accepted | 2025-12-28 |
+| [ADR-006](006-coverage-threshold-strategy.md) | Test Coverage Threshold Strategy | Accepted | 2025-12-28 |
 
 ## Template
 
