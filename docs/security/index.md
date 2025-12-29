@@ -74,7 +74,7 @@ Skills are classified by trust level:
 
 ### 2.1 SSRF Prevention
 
-**Implemented in**: `RawUrlSourceAdapter.ts` (SMI-721)
+**Implemented in**: `RawUrlSourceAdapter.ts` (SMI-721, SMI-729)
 
 Server-Side Request Forgery (SSRF) is prevented by blocking requests to internal networks.
 
@@ -88,6 +88,16 @@ Server-Side Request Forgery (SSRF) is prevented by blocking requests to internal
 | `127.0.0.0/8` | Localhost |
 | `169.254.0.0/16` | Link-local |
 | `0.0.0.0/8` | Current network |
+
+#### Blocked Ranges (IPv6)
+
+| Range | Description |
+|-------|-------------|
+| `::1` | Loopback (localhost) |
+| `fe80::/10` | Link-local addresses |
+| `fc00::/7` | Unique local addresses (ULA) |
+| `ff00::/8` | Multicast addresses |
+| `::ffff:0:0/96` | IPv4-mapped IPv6 addresses |
 
 #### Blocked Hostnames
 
@@ -113,7 +123,7 @@ private validateUrl(url: string): void {
     throw new Error(`Access to localhost blocked: ${hostname}`);
   }
 
-  // Check for private IP ranges
+  // Check for IPv4 private ranges
   const ipv4Match = hostname.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
   if (ipv4Match) {
     const [, a, b] = ipv4Match.map(Number);
@@ -128,12 +138,45 @@ private validateUrl(url: string): void {
       throw new Error(`Access to private network blocked: ${hostname}`);
     }
   }
+
+  // Check for IPv6 addresses (SMI-729)
+  if (hostname.includes(':')) {
+    this.validateIPv6(hostname);
+  }
+}
+
+private validateIPv6(hostname: string): void {
+  const normalized = hostname.toLowerCase();
+
+  // Block link-local (fe80::/10)
+  if (normalized.startsWith('fe8') || normalized.startsWith('fe9') ||
+      normalized.startsWith('fea') || normalized.startsWith('feb')) {
+    throw new Error(`Access to IPv6 link-local address blocked: ${hostname}`);
+  }
+
+  // Block unique local addresses (fc00::/7)
+  if (normalized.startsWith('fc') || normalized.startsWith('fd')) {
+    throw new Error(`Access to IPv6 unique local address blocked: ${hostname}`);
+  }
+
+  // Block multicast (ff00::/8)
+  if (normalized.startsWith('ff')) {
+    throw new Error(`Access to IPv6 multicast address blocked: ${hostname}`);
+  }
+
+  // Block IPv4-mapped IPv6 (::ffff:0:0/96)
+  if (normalized.includes('::ffff:')) {
+    throw new Error(`Access to IPv4-mapped IPv6 address blocked: ${hostname}`);
+  }
 }
 ```
 
-#### Future Work
+#### Key Points
 
-- SMI-729: Add IPv6 private range detection
+- Both IPv4 and IPv6 private ranges are blocked
+- IPv4-mapped IPv6 addresses are detected and validated
+- Case-insensitive matching for IPv6 addresses
+- Defense in depth: protocol, hostname, and IP range checks
 
 ### 2.2 Path Traversal Prevention
 
@@ -204,6 +247,93 @@ private isExcluded(name: string): boolean {
 }
 ```
 
+### 2.4 Content Security Policy (CSP)
+
+**Implemented in**: `packages/mcp-server/src/middleware/csp.ts`, `packages/vscode-extension/src/utils/csp.ts` (SMI-731)
+
+Content Security Policy headers prevent XSS and injection attacks by controlling which resources can be loaded.
+
+#### MCP Server CSP
+
+While the MCP server currently uses stdio transport, CSP utilities are provided for future HTTP transport scenarios.
+
+**Default Policy**:
+
+```typescript
+{
+  'default-src': ["'self'"],
+  'script-src': ["'self'"],
+  'style-src': ["'self'"],
+  'img-src': ["'self'", 'data:', 'https:'],
+  'object-src': ["'none'"],
+  'frame-src': ["'none'"],
+  'upgrade-insecure-requests': true,
+  'block-all-mixed-content': true
+}
+```
+
+**Strict Policy (Production)**:
+
+```typescript
+{
+  'default-src': ["'none'"],
+  'script-src': ["'self'"],
+  'style-src': ["'self'"],
+  'img-src': ["'self'", 'data:'],
+  'object-src': ["'none'"],
+  'frame-src': ["'none'"],
+  'frame-ancestors': ["'none'"],
+  'upgrade-insecure-requests': true,
+  'block-all-mixed-content': true
+}
+```
+
+#### VS Code Extension CSP
+
+Webviews use nonce-based CSP to prevent inline script execution.
+
+**Skill Detail Webview Policy**:
+
+```
+default-src 'none';
+script-src 'nonce-{nonce}';
+style-src 'unsafe-inline';
+img-src https: data: vscode-resource:;
+connect-src 'none';
+object-src 'none';
+frame-src 'none';
+form-action 'none'
+```
+
+#### Implementation Pattern
+
+```typescript
+// Generate cryptographically secure nonce
+const nonce = generateCspNonce()
+
+// Build CSP header with nonce
+const csp = getSkillDetailCsp(nonce)
+
+// Use nonce in HTML
+;<meta http-equiv="Content-Security-Policy" content="${csp}">
+  <script nonce="${nonce}">
+    {
+      // Only scripts with matching nonce can execute
+    }
+  </script>
+```
+
+#### Security Requirements
+
+| Requirement                       | Status | Notes                                |
+| --------------------------------- | ------ | ------------------------------------ |
+| No `'unsafe-eval'` in production  | ✅     | Blocked in STRICT_CSP_DIRECTIVES     |
+| No `'unsafe-inline'` without nonce | ✅     | All scripts use nonce-based CSP      |
+| Block all object/embed elements   | ✅     | `object-src 'none'`                  |
+| Block all frames                  | ✅     | `frame-src 'none'`, `frame-ancestors 'none'` |
+| HTTPS upgrade                     | ✅     | `upgrade-insecure-requests` enabled  |
+| No mixed content                  | ✅     | `block-all-mixed-content` enabled    |
+
 ---
 
 ## 3. Audit Logging
@@ -252,6 +382,8 @@ CREATE INDEX IF NOT EXISTS idx_audit_resource ON audit_logs(resource);
 | `CacheSecurity.test.ts` | Cache security |
 | `SessionManager.security.test.ts` | Session security |
 | `security/ContinuousSecurity.test.ts` | Integration tests |
+| `middleware/__tests__/csp.test.ts` | MCP server CSP utilities |
+| `utils/__tests__/csp.test.ts` | VS Code extension CSP |
 
 ### 4.2 Running Security Tests
 
@@ -264,7 +396,58 @@ docker exec skillsmith-dev-1 npm test -- RawUrlSourceAdapter.security.test.ts
 
 # Run SecurityScanner tests
 docker exec skillsmith-dev-1 npm test -- SecurityScanner.test.ts
+
+# Run CSP tests
+docker exec skillsmith-dev-1 npm test -- csp.test.ts
 ```
+
+### 4.3 Pre-Push Security Hook
+
+**Implemented in**: SMI-727
+
+Automated security checks run before every push to prevent security vulnerabilities from reaching production.
+
+#### Checks Performed
+
+1. **Security Test Suite**: Runs all tests in `packages/core/tests/security/`
+2. **Dependency Audit**: Runs `npm audit --audit-level=high` to detect vulnerable dependencies
+3. **Hardcoded Secrets Detection**: Scans for common secret patterns in code
+
+#### Detected Secret Patterns
+
+| Pattern Type | Examples |
+|--------------|----------|
+| API Keys | `api_key`, `secret_key`, `access_token`, `auth_token` |
+| AWS Credentials | `AKIA...`, `aws_secret_access_key` |
+| Passwords | `password=`, `passwd=` |
+| Linear API | `LINEAR_API_KEY="lin_api_..."` |
+| GitHub Tokens | `ghp_...`, `ghs_...` |
+| Private Keys | `-----BEGIN ... PRIVATE KEY-----` |
+
+#### Usage
+
+```bash
+# Normal push - runs checks automatically
+git push origin main
+
+# Bypass hook (NOT RECOMMENDED)
+git push --no-verify origin main
+
+# Run security checks manually
+bash scripts/pre-push-check.sh
+```
+
+#### Files
+
+- `.husky/pre-push` - Git hook that triggers security checks
+- `scripts/pre-push-check.sh` - Security validation script
+
+#### Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| 0 | All security checks passed |
+| 1 | Security issues detected (push blocked) |
 
 ---
 
@@ -278,6 +461,7 @@ See: [checklists/code-review.md](checklists/code-review.md)
 - [ ] **SSRF**: URLs validated before fetch
 - [ ] **Path Traversal**: File paths validated within root
 - [ ] **Injection**: No string interpolation in SQL/shell
+- [ ] **CSP**: Webviews use nonce-based CSP, no unsafe-eval/unsafe-inline
 - [ ] **Secrets**: No hardcoded credentials
 - [ ] **Schema**: Changes follow schema.ts patterns
 - [ ] **Tests**: Security tests added for new features
@@ -314,20 +498,25 @@ See: [checklists/code-review.md](checklists/code-review.md)
 | `packages/core/src/sources/LocalFilesystemAdapter.ts` | Path traversal prevention |
 | `packages/core/src/security/SecurityScanner.ts` | Skill content scanning |
 | `packages/core/src/db/schema.ts` | Database schema |
+| `packages/mcp-server/src/middleware/csp.ts` | CSP utilities for MCP server |
+| `packages/vscode-extension/src/utils/csp.ts` | CSP utilities for webviews |
+| `packages/vscode-extension/src/views/SkillDetailPanel.ts` | Webview CSP implementation |
 
 ---
 
 ## 7. Tracking Issues
 
-| Issue | Title | Priority |
-|-------|-------|----------|
-| SMI-725 | Add security scanning to CI | P1 |
-| SMI-726 | Standardize adapter validation | P2 |
-| SMI-729 | Add IPv6 SSRF protection | P2 |
-| SMI-732 | Add input sanitization library | P2 |
-| SMI-733 | Add structured audit logging | P2 |
-| SMI-734 | Create security source of truth | P1 |
-| SMI-735 | Create security review checklist | P1 |
+| Issue | Title | Priority | Status |
+|-------|-------|----------|--------|
+| SMI-725 | Add security scanning to CI | P1 | Open |
+| SMI-726 | Standardize adapter validation | P2 | Open |
+| SMI-727 | Implement pre-push security hook | P1 | ✅ Done |
+| SMI-729 | Add IPv6 SSRF protection | P2 | ✅ Done |
+| SMI-731 | Add Content Security Policy (CSP) headers | P1 | ✅ Done |
+| SMI-732 | Add input sanitization library | P2 | Open |
+| SMI-733 | Add structured audit logging | P2 | Open |
+| SMI-734 | Create security source of truth | P1 | ✅ Done |
+| SMI-735 | Create security review checklist | P1 | ✅ Done |
 
 ---
 

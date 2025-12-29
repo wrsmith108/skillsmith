@@ -16,6 +16,7 @@ ADRs document significant architectural decisions made during the project. They 
 | [ADR-004](004-docker-guard-hook.md) | Docker Guard Hook for Daemon Timeout Protection | Accepted | 2025-12-28 |
 | [ADR-005](005-vscode-mcp-client.md) | VS Code Extension MCP Client Architecture | Accepted | 2025-12-28 |
 | [ADR-006](006-coverage-threshold-strategy.md) | Test Coverage Threshold Strategy | Accepted | 2025-12-28 |
+| [ADR-008](008-security-hardening-phase.md) | Security Hardening Phase (Phase 2d) | Accepted | 2025-12-29 |
 
 ## Template
 
