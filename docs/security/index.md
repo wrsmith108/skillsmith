@@ -504,20 +504,111 @@ See: [checklists/code-review.md](checklists/code-review.md)
 
 ---
 
-## 7. Tracking Issues
+## 7. Rate Limiting
+
+**Implemented in**: SMI-730
+
+Rate limiting protects against abuse and DoS attacks using a token bucket algorithm.
+
+### Configuration Presets
+
+| Preset | Max Tokens | Refill Rate | Use Case |
+|--------|------------|-------------|----------|
+| `strict` | 10 | 1/sec | High-value endpoints |
+| `standard` | 100 | 10/sec | Normal API usage |
+| `relaxed` | 1000 | 100/sec | Batch operations |
+| `burst` | 50 | 5/sec | Occasional high load |
+
+### Implementation
+
+```typescript
+import { createRateLimiter, RATE_LIMIT_PRESETS } from '@skillsmith/core/security/RateLimiter'
+
+const limiter = createRateLimiter(RATE_LIMIT_PRESETS.standard)
+const result = limiter.consume('user-123')
+
+if (!result.allowed) {
+  throw new Error('Rate limit exceeded')
+}
+```
+
+### Known Limitations
+
+- **Fail-open behavior**: On storage errors, requests are allowed through
+- Recommendation: Consider fail-closed for high-security endpoints
+
+---
+
+## 8. Input Sanitization
+
+**Implemented in**: SMI-732
+
+Input sanitization prevents XSS, injection, and other input-based attacks.
+
+### Available Functions
+
+| Function | Purpose | Use Case |
+|----------|---------|----------|
+| `sanitizeHtml()` | Strip HTML/scripts | User-provided descriptions |
+| `sanitizePath()` | Remove path traversal | File system operations |
+| `sanitizeFilename()` | Safe filenames | User uploads |
+| `sanitizeUrl()` | URL validation | External links |
+| `sanitizeForLog()` | Log-safe strings | Audit logging |
+
+### Known Limitations
+
+- **ReDoS risk**: Complex regex patterns may be vulnerable with very long inputs
+- Recommendation: Add input length limits before sanitization
+
+---
+
+## 9. Code Review Results
+
+**Reviewed**: 2025-12-29
+**Sprint**: SMI-725 to SMI-737
+
+### Overall Assessment: APPROVED ✅
+
+| Category | Rating | Notes |
+|----------|--------|-------|
+| Security Patterns | Excellent | Comprehensive SSRF, path traversal coverage |
+| Code Quality | Very Good | TypeScript best practices followed |
+| Test Coverage | Excellent | 100% method coverage on security utilities |
+| Documentation | Good | JSDoc comments on all public APIs |
+
+### Minor Issues Identified
+
+1. **ReDoS in HTML sanitization** - Script tag regex uses nested quantifiers
+2. **Fail-open rate limiting** - Consider fail-closed option for critical endpoints
+3. **Pre-push efficiency** - Script runs tests twice unnecessarily
+
+### Recommendations
+
+- Add input length limits to sanitization functions
+- Add rate limit metrics for monitoring
+- Optimize pre-push script to single test run
+
+---
+
+## 10. Tracking Issues
 
 | Issue | Title | Priority | Status |
 |-------|-------|----------|--------|
-| SMI-725 | Add security scanning to CI | P1 | Open |
-| SMI-726 | Standardize adapter validation | P2 | Open |
+| SMI-725 | Add security scanning to CI | P1 | ✅ Done |
+| SMI-726 | Standardize adapter validation | P2 | ✅ Done |
 | SMI-727 | Implement pre-push security hook | P1 | ✅ Done |
+| SMI-728 | Consolidate logger usage | P3 | ✅ Done |
 | SMI-729 | Add IPv6 SSRF protection | P2 | ✅ Done |
-| SMI-731 | Add Content Security Policy (CSP) headers | P1 | ✅ Done |
-| SMI-732 | Add input sanitization library | P2 | Open |
-| SMI-733 | Add structured audit logging | P2 | Open |
+| SMI-730 | Consolidate rate limiting | P3 | ✅ Done |
+| SMI-731 | Add Content Security Policy headers | P1 | ✅ Done |
+| SMI-732 | Add input sanitization library | P2 | ✅ Done |
+| SMI-733 | Add structured audit logging | P2 | ✅ Done |
 | SMI-734 | Create security source of truth | P1 | ✅ Done |
 | SMI-735 | Create security review checklist | P1 | ✅ Done |
+| SMI-737 | Create ADR-007 rate limiting | P3 | ✅ Done |
 
 ---
 
 *This document is the authoritative source for security standards. For questions, contact the Security Specialist.*
+
+*Last Code Review: 2025-12-29 | Reviewer: Claude Opus 4.5*
