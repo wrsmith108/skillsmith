@@ -20,6 +20,7 @@ ADRs document significant architectural decisions made during the project. They 
 | [ADR-009](009-embedding-service-fallback.md) | Embedding Service Fallback Strategy | Accepted | 2025-12-30 |
 | [ADR-010](010-codebase-analysis-scope.md) | Codebase Analysis Scope (TS/JS Only) | Accepted | 2025-12-30 |
 | [ADR-011](011-integration-test-database.md) | Integration Test Database Strategy | Accepted | 2025-12-30 |
+| [ADR-012](012-native-module-version-management.md) | Native Module Version Management Strategy | Accepted | 2025-12-31 |
 
 ## Template
 
