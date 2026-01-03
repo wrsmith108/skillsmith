@@ -1,9 +1,9 @@
 # ADR-002: Docker with glibc for Native Module Compatibility
 
-**Status**: Accepted
-**Date**: 2025-12-27
+**Status**: Accepted (Updated)
+**Date**: 2025-12-27 (Updated: 2026-01-03)
 **Deciders**: Skillsmith Team
-**Related Issues**: SMI-617
+**Related Issues**: SMI-617, SMI-968
 
 ## Context
 
@@ -25,7 +25,9 @@ The original Dockerfile used `node:20-alpine`, which is based on Alpine Linux wi
 
 ## Decision
 
-Use `node:20-slim` (Debian-based) instead of `node:20-alpine` for the development Docker image.
+Use `node:22-slim` (Debian-based) instead of Alpine for the development Docker image.
+
+> **Note (2026-01-03)**: Originally used `node:20-slim`, now upgraded to `node:22-slim` to match `package.json` engine requirements (`>=22.0.0`). See [ADR-012](012-native-module-version-management.md) for version management strategy.
 
 ### Dockerfile Change
 
@@ -34,8 +36,8 @@ Use `node:20-slim` (Debian-based) instead of `node:20-alpine` for the developmen
 FROM node:20-alpine
 RUN apk add --no-cache python3 make g++ git
 
-# After (Debian - glibc)
-FROM node:20-slim
+# After (Debian - glibc, Node 22)
+FROM node:22-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 make g++ git \
     && rm -rf /var/lib/apt/lists/*
@@ -115,3 +117,4 @@ docker exec skillsmith-dev-1 npm rebuild
 | Date | Change |
 |------|--------|
 | 2025-12-27 | Initial decision documented after Phase 0 retro |
+| 2026-01-03 | Updated from Node 20 to Node 22 per ADR-012 requirements (SMI-968) |
