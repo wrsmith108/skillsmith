@@ -1,6 +1,6 @@
 # Engineering Standards - Skillsmith
 
-**Version**: 1.5
+**Version**: 1.6
 **Status**: Active
 **Owner**: Skillsmith Team
 
@@ -668,6 +668,241 @@ All MCP tools return structured error responses:
 
 ---
 
+## 7. Enterprise Development Standards
+
+### 7.1 License Validation
+
+All enterprise features must gate on a valid license before execution.
+
+**Rules:**
+- Use `LicenseValidator` from `@skillsmith/enterprise` for all license checks
+- Graceful degradation when license is invalid or expired
+- License check caching with 5-minute TTL to reduce API calls
+- Never expose license keys in logs or error messages
+
+```typescript
+import { LicenseValidator } from '@skillsmith/enterprise';
+
+const validator = new LicenseValidator({ cacheTtl: 5 * 60 * 1000 });
+
+async function enterpriseFeature(): Promise<Result> {
+  const license = await validator.validate();
+  if (!license.valid) {
+    return { success: false, error: 'Enterprise license required' };
+  }
+  // Proceed with enterprise functionality
+}
+```
+
+### 7.2 SSO Integration Patterns
+
+Enterprise SSO must support multiple identity providers through a unified interface.
+
+**Supported Protocols:**
+- SAML 2.0 (Okta, Azure AD, OneLogin)
+- OIDC (Google Workspace, Auth0, Keycloak)
+
+**Implementation Requirements:**
+
+| Requirement | Implementation |
+|-------------|----------------|
+| Provider-agnostic interface | Use `SSOManager` abstraction |
+| Session management | Secure token storage with encryption at rest |
+| Logout propagation | SLO (Single Logout) across all clients |
+| Token refresh | Automatic refresh before expiration |
+
+```typescript
+interface SSOManager {
+  initiateLogin(provider: SSOProvider): Promise<AuthRequest>;
+  handleCallback(response: AuthResponse): Promise<Session>;
+  logout(sessionId: string, propagate?: boolean): Promise<void>;
+  refreshSession(sessionId: string): Promise<Session>;
+}
+```
+
+### 7.3 RBAC Implementation
+
+Role-Based Access Control ensures proper authorization across all enterprise features.
+
+**Standard Roles:**
+
+| Role | Permissions |
+|------|-------------|
+| Admin | Full access, user management, configuration |
+| Manager | Team management, approval workflows, reports |
+| User | Standard feature access, self-service |
+| ReadOnly | View-only access, no modifications |
+
+**Implementation Requirements:**
+- Permission checking middleware for all MCP tools
+- Role hierarchy with inheritance (Admin > Manager > User > ReadOnly)
+- Audit all permission checks for compliance
+
+```typescript
+// Permission middleware for MCP tools
+async function checkPermission(
+  userId: string,
+  resource: string,
+  action: 'read' | 'write' | 'delete' | 'admin'
+): Promise<boolean> {
+  const result = await rbac.check(userId, resource, action);
+  await auditLogger.log({
+    type: 'permission_check',
+    userId,
+    resource,
+    action,
+    result: result.allowed,
+    timestamp: new Date().toISOString()
+  });
+  return result.allowed;
+}
+```
+
+### 7.4 Audit Logging (Enterprise)
+
+Enterprise audit extends core `AuditLogger` with compliance-focused features.
+
+**Requirements for SOC 2 Compliance:**
+- Structured events with consistent schema
+- SIEM export support (Splunk, CloudWatch, Datadog)
+- 90-day default retention with configurable policy
+- Immutable log storage (append-only)
+
+**Audit Event Schema:**
+
+```typescript
+interface EnterpriseAuditEvent {
+  id: string;                    // UUID
+  timestamp: string;             // ISO 8601
+  actor: {
+    userId: string;
+    email: string;
+    role: string;
+    ipAddress: string;
+  };
+  action: string;                // e.g., 'skill.install', 'user.create'
+  resource: {
+    type: string;
+    id: string;
+    name?: string;
+  };
+  result: 'success' | 'failure';
+  metadata: Record<string, unknown>;
+  tenantId: string;              // Required for multi-tenant
+}
+```
+
+**SIEM Export Configuration:**
+
+```typescript
+const auditConfig = {
+  retention: { days: 90, policy: 'delete' },
+  export: {
+    enabled: true,
+    destination: 'splunk', // or 'cloudwatch', 'datadog'
+    batchSize: 100,
+    flushInterval: 60000   // 1 minute
+  },
+  immutable: true
+};
+```
+
+### 7.5 Multi-Tenant Data Isolation
+
+Strict tenant isolation prevents data leakage between enterprise customers.
+
+**Mandatory Requirements:**
+
+| Requirement | Implementation |
+|-------------|----------------|
+| Tenant ID in all queries | Repository-level enforcement |
+| Cross-tenant prevention | Query middleware validation |
+| Tenant-scoped caching | Cache keys include tenant ID |
+| Export boundaries | Data export respects tenant isolation |
+
+```typescript
+// Repository base class enforces tenant isolation
+abstract class TenantScopedRepository<T> {
+  constructor(private tenantId: string) {}
+
+  protected addTenantScope(query: Query): Query {
+    return query.where('tenant_id', '=', this.tenantId);
+  }
+
+  async findById(id: string): Promise<T | null> {
+    const result = await this.db
+      .select()
+      .from(this.table)
+      .where('id', '=', id)
+      .where('tenant_id', '=', this.tenantId)  // Always enforced
+      .first();
+    return result;
+  }
+}
+```
+
+**Cache Key Pattern:**
+
+```typescript
+// ❌ WRONG: No tenant isolation
+const cacheKey = `skill:${skillId}`;
+
+// ✅ CORRECT: Tenant-scoped cache
+const cacheKey = `tenant:${tenantId}:skill:${skillId}`;
+```
+
+### 7.6 Private Registry Security
+
+Private skill registries require enhanced security controls.
+
+**Security Requirements:**
+
+| Requirement | Implementation |
+|-------------|----------------|
+| TLS required | Reject non-HTTPS connections |
+| Token authentication | Bearer tokens with rotation policy |
+| Skill signature verification | Ed25519 signatures on all packages |
+| Air-gapped mode | Offline validation with cached keys |
+
+```typescript
+interface PrivateRegistryConfig {
+  url: string;                    // Must be HTTPS
+  auth: {
+    type: 'bearer';
+    token: string;
+    rotationDays: number;         // Recommended: 90
+  };
+  verification: {
+    enabled: true;
+    publicKeys: string[];         // Ed25519 public keys
+    allowUnsigned: false;
+  };
+  airgapped?: {
+    enabled: boolean;
+    keyCache: string;             // Path to cached verification keys
+    offlineValidation: boolean;
+  };
+}
+```
+
+**Signature Verification:**
+
+```typescript
+import { verify } from '@skillsmith/enterprise/crypto';
+
+async function verifySkillPackage(
+  packagePath: string,
+  signature: string,
+  publicKey: string
+): Promise<boolean> {
+  const content = await fs.readFile(packagePath);
+  const hash = createHash('sha256').update(content).digest();
+  return verify(hash, signature, publicKey);
+}
+```
+
+---
+
 ## Appendix: Quick Reference
 
 ### Security Documentation
@@ -715,7 +950,8 @@ All MCP tools return structured error responses:
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 1.6 | 2025-12-29 | Added §5 Mock vs Production Separation (SMI-763) |
+| 1.6 | 2026-01-02 | Added §7 Enterprise Development Standards |
+| 1.5.1 | 2025-12-29 | Added §5 Mock vs Production Separation (SMI-763) |
 | 1.5 | 2025-12-29 | Added §1.5 Schema review criteria, Security Documentation appendix, cross-links to security checklist |
 | 1.4 | 2025-12-27 | Added §4.3-4.8 Security Standards (input validation, prototype pollution, subprocess security, temp files, concurrency, crypto) from Phase 2b TDD |
 | 1.3 | 2025-12-28 | Added §3.5-3.7 Session Management, Incremental Verification, Linear Integration (from Phase 2a retro) |

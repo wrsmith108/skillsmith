@@ -1,6 +1,6 @@
 # ADR-001: Monorepo Structure with npm Workspaces
 
-**Status**: Accepted
+**Status**: Accepted (Amended 2026-01-02)
 **Date**: 2025-12-27
 **Deciders**: Skillsmith Team
 
@@ -52,6 +52,39 @@ packages/
 - Pros: Simplest structure
 - Cons: Forces users to install everything, harder to maintain
 - Why rejected: Different use cases need different packages
+
+## Updates
+
+### Update 2026-01-02: Additional Packages
+
+The monorepo has expanded to include additional packages:
+
+```
+packages/
+├── core/              # @skillsmith/core (Apache-2.0)
+├── mcp-server/        # @skillsmith/mcp-server (Apache-2.0)
+├── cli/               # @skillsmith/cli (Apache-2.0)
+├── vscode-extension/  # @skillsmith/vscode-extension (Apache-2.0)
+└── enterprise/        # @skillsmith/enterprise (Proprietary) [Planned]
+```
+
+**VS Code Extension** (added Phase 3):
+- MCP client for VS Code integration
+- See ADR-005 for architecture details
+
+**Enterprise Package** (planned Phase 7):
+- Proprietary features for commercial tiers
+- See ADR-013 (Open Core Licensing) and ADR-014 (Enterprise Architecture)
+
+### Package Dependencies
+
+```
+enterprise → core (peer)
+          → mcp-server (peer)
+vscode-extension → mcp-server
+mcp-server → core
+cli → core
+```
 
 ## References
 
