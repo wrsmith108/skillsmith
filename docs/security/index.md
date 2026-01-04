@@ -568,7 +568,7 @@ See: [checklists/code-review.md](checklists/code-review.md)
 
 ## 7. Rate Limiting
 
-**Implemented in**: SMI-730
+**Implemented in**: SMI-730, SMI-1013
 
 Rate limiting protects against abuse and DoS attacks using a token bucket algorithm.
 
@@ -606,6 +606,55 @@ if (!result.allowed) {
 const strictLimiter = createRateLimiter({
   ...RATE_LIMIT_PRESETS.strict,  // Already includes failMode: 'closed'
 })
+```
+
+### Memory Bounds (SMI-1013)
+
+**Added**: Wave 3 Security Hardening (2026-01-03)
+
+The rate limiter enforces strict memory bounds to prevent resource exhaustion attacks:
+
+| Constant | Value | Purpose |
+|----------|-------|---------|
+| `MAX_UNIQUE_KEYS` | 10,000 | Maximum unique keys for queues and metrics |
+| `METRICS_TTL_MS` | 1 hour (3,600,000ms) | Time-to-live for stale metrics entries |
+| Cleanup Interval | 5 minutes | Periodic cleanup of stale metrics |
+
+#### Memory Protection Mechanisms
+
+1. **Metrics Eviction**: When `MAX_UNIQUE_KEYS` is reached, the oldest metrics entry (by `lastUpdated`) is evicted before adding a new key.
+
+2. **Queue Bounds**: New queues are rejected with `RateLimitQueueFullError` when the limit is reached.
+
+3. **TTL-Based Cleanup**: Metrics older than `METRICS_TTL_MS` are automatically removed every 5 minutes.
+
+4. **Empty Queue Cleanup**: Empty queues are deleted during queue processing to prevent memory leaks.
+
+#### Concurrency Safety (SMI-1013)
+
+| Mechanism | Purpose |
+|-----------|---------|
+| `isProcessingQueues` flag | Prevents concurrent queue processing |
+| UUID request IDs | Prevents timestamp collision in queued requests |
+| ID-based removal | Queue requests removed by ID, not position |
+
+### Request Queuing (SMI-1013)
+
+When rate limited, requests can optionally queue and wait for tokens:
+
+```typescript
+const limiter = new RateLimiter({
+  ...RATE_LIMIT_PRESETS.standard,
+  enableQueue: true,
+  queueTimeoutMs: 30000,  // Wait up to 30s
+  maxQueueSize: 100,      // Max 100 waiting requests per key
+})
+
+// Will wait for token or throw RateLimitQueueTimeoutError
+const result = await limiter.waitForToken('adapter:github')
+if (result.queued) {
+  console.log(`Waited ${result.queueWaitMs}ms in queue`)
+}
 ```
 
 ### Metrics Monitoring
