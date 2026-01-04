@@ -356,6 +356,7 @@ Claude:
 - Run code review after implementation
 - Document lessons learned in ADR
 - Update Linear with project status
+- **ALWAYS run code review before any commit/push**
 
 ### DON'T
 - Create todos one at a time
@@ -363,6 +364,68 @@ Claude:
 - Skip code review
 - Leave documentation stale
 - Forget to mark issues done
+- **NEVER commit or push without completing code review first**
+
+## ⚠️ MANDATORY: Code Review Before Push
+
+**CRITICAL REQUIREMENT**: Always run a code review before committing or pushing any changes.
+
+### Code Review Gate
+
+Before ANY commit or push operation, you MUST:
+
+1. **Run typecheck**: `docker exec skillsmith-dev-1 npm run typecheck`
+2. **Run tests**: `docker exec skillsmith-dev-1 npm test`
+3. **Execute code review** using the [GitHub Code Review Skill](../github-code-review/SKILL.md)
+
+### Code Review Checklist
+
+```javascript
+// REQUIRED before commit/push
+Task({
+  description: "Code review before push",
+  prompt: `Perform comprehensive code review:
+
+    ## Security
+    - [ ] No hardcoded secrets or API keys
+    - [ ] Proper input validation
+    - [ ] No SQL injection vulnerabilities
+    - [ ] SSRF/path traversal prevention
+
+    ## Quality
+    - [ ] All tests pass
+    - [ ] TypeScript strict compliance
+    - [ ] Error handling complete
+    - [ ] No breaking changes without documentation
+
+    ## Documentation
+    - [ ] Public APIs documented
+    - [ ] ADR created for architectural decisions
+    - [ ] Linear issues updated
+
+    Provide: PASS, WARN (with items), or FAIL (with blockers)`,
+  subagent_type: "general-purpose"
+})
+```
+
+### Review Status Requirements
+
+| Status | Can Push? | Action Required |
+|--------|-----------|-----------------|
+| PASS | ✅ Yes | Proceed with commit/push |
+| WARN | ⚠️ Conditional | Fix warnings or document as known issues |
+| FAIL | ❌ No | Must fix blockers before push |
+
+### Quick Review Command
+
+```bash
+# Run quick pre-push checks
+docker exec skillsmith-dev-1 npm run typecheck && \
+docker exec skillsmith-dev-1 npm test && \
+echo "✅ Ready for code review"
+```
+
+See [GitHub Code Review Skill](../github-code-review/SKILL.md) for detailed review patterns.
 
 ## Configuration
 
