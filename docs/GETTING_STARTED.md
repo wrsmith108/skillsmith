@@ -34,9 +34,31 @@ Add the Skillsmith MCP server:
 
 Restart Claude Code to load the new MCP server.
 
-### Option 2: Use CLI (Development)
+### Option 2: Install CLI Globally
 
-The CLI is available for local development after cloning the repository:
+Install the CLI for command-line access:
+
+```bash
+npm install -g @skillsmith/cli
+```
+
+The CLI provides two command names:
+- `skillsmith` - Full command name
+- `sklx` - Short alias for faster typing
+
+```bash
+# Both commands are equivalent
+skillsmith search "testing"
+sklx search "testing"
+
+# Other examples
+sklx list
+sklx install community/jest-helper
+```
+
+### Option 3: Development Setup
+
+For contributing to Skillsmith:
 
 ```bash
 # Clone and build
@@ -45,10 +67,8 @@ cd skillsmith
 npm install
 npm run build
 
-# Run CLI commands
+# Run CLI commands locally
 node packages/cli/dist/index.js search "testing"
-node packages/cli/dist/index.js get community/jest-helper
-node packages/cli/dist/index.js install community/jest-helper
 ```
 
 ## Verifying Installation
@@ -299,8 +319,8 @@ docker exec skillsmith-dev-1 npm rebuild
 
 2. Check your query (minimum 2 characters):
    ```bash
-   skillsmith search "test"  # OK
-   skillsmith search "t"     # Too short
+   sklx search "test"  # OK
+   sklx search "t"     # Too short
    ```
 
 ## Next Steps
