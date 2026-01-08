@@ -1,13 +1,43 @@
-# File Splitting Plan - SMI-717
+# File Splitting Plan - Phase 6 Tech Debt
+
+> **Issues**: SMI-1189 through SMI-1194
+> **Updated**: January 8, 2026
+> **Previous**: SMI-717 (December 28, 2025)
+> **Standard Reference**: docs/architecture/standards.md (500 line maximum)
 
 ## Overview
 
-This document analyzes 8 files exceeding the 500-line limit per standards.md and provides a splitting plan for each. Files are prioritized by a combination of lines over limit and splitting complexity.
+This document provides a comprehensive refactoring plan for **30 large files** (>500 lines) identified during the Phase 6 code review. The goal is to improve maintainability, testability, and compliance with the project standard of <500 lines per file.
 
-**Analysis Date**: December 28, 2025
-**Standard Reference**: docs/architecture/standards.md (500 line maximum)
+## Executive Summary
 
-## Summary
+| Issue | Package | Files | Total Lines | Priority | Effort |
+|-------|---------|-------|-------------|----------|--------|
+| SMI-1189 | @skillsmith/core | 10 | 7,027 | P1 | High |
+| SMI-1190 | @skillsmith/core | 7 | 3,724 | P2 | Medium |
+| SMI-1191 | @skillsmith/core | 3 | 1,599 | P3 | Low |
+| SMI-1192 | @skillsmith/enterprise | 4 | 2,461 | P2 | Medium |
+| SMI-1193 | @skillsmith/mcp-server | 4 | 2,409 | P3 | Medium |
+| SMI-1194 | @skillsmith/vscode | 1 | 607 | P4 | Low |
+| **Total** | | **30 files** | **17,827** | | |
+
+## Key Findings
+
+### Critical Issues
+1. **RateLimiter.ts (995 lines)** - Largest file, needs 4-file split
+2. **AuditEventTypes.ts (811 lines)** - Second largest, needs domain-based split into 10 files
+3. **SessionHealthMonitor.ts** - Contains **182 lines of EventEmitter boilerplate** that should be replaced with TypedEventEmitter pattern
+
+### Quick Wins
+1. **Type extractions** - Most files have 50-170 lines of types that can be easily extracted
+2. **Pattern/config extractions** - scanner.ts, TriggerDetector.ts have large constant blocks
+
+### Shared Optimizations
+- `metrics.ts` and `tracer.ts` share duplicate OTEL loading code (~60 lines) - create `telemetry/otel-utils.ts`
+
+---
+
+## Original Analysis (SMI-717, December 2025)
 
 | Priority | File | Lines | Over Limit | Complexity | Recommendation |
 |----------|------|-------|------------|------------|----------------|
