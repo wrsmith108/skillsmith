@@ -189,7 +189,7 @@ Header.Payload.Signature
 **Payload**:
 ```json
 {
-  "iss": "https://license.skillsmith.io",
+  "iss": "https://license.skillsmith.app",
   "sub": "org_abc123",
   "aud": "skillsmith-enterprise",
   "iat": 1704067200,
@@ -441,7 +441,7 @@ class KeyRotationManager {
 <?xml version="1.0" encoding="UTF-8"?>
 <md:EntityDescriptor
   xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"
-  entityID="https://skillsmith.io/enterprise/saml/metadata">
+  entityID="https://skillsmith.app/enterprise/saml/metadata">
 
   <md:SPSSODescriptor
     AuthnRequestsSigned="true"
@@ -466,7 +466,7 @@ class KeyRotationManager {
 
     <md:SingleLogoutService
       Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
-      Location="https://skillsmith.io/enterprise/saml/logout"/>
+      Location="https://skillsmith.app/enterprise/saml/logout"/>
 
     <md:NameIDFormat>
       urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress
@@ -474,7 +474,7 @@ class KeyRotationManager {
 
     <md:AssertionConsumerService
       Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
-      Location="https://skillsmith.io/enterprise/saml/acs"
+      Location="https://skillsmith.app/enterprise/saml/acs"
       index="0"
       isDefault="true"/>
 
@@ -1635,8 +1635,8 @@ sso:
     clientSecret: ${AZURE_CLIENT_SECRET}
 
   saml:
-    entityId: https://skillsmith.io/enterprise/saml
-    assertionConsumerServiceUrl: https://skillsmith.io/enterprise/saml/acs
+    entityId: https://skillsmith.app/enterprise/saml
+    assertionConsumerServiceUrl: https://skillsmith.app/enterprise/saml/acs
     idpMetadataUrl: ${IDP_METADATA_URL}
 
   session:

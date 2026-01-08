@@ -520,7 +520,7 @@ d) Your use of the Service in violation of these Terms.
 
 ### 14.1 Informal Resolution
 
-Before filing any claim, you agree to attempt to resolve the dispute informally by contacting us at legal@skillsmith.io. We will attempt to resolve the dispute within sixty (60) days.
+Before filing any claim, you agree to attempt to resolve the dispute informally by contacting us at legal@skillsmith.app. We will attempt to resolve the dispute within sixty (60) days.
 
 ### 14.2 Binding Arbitration
 
@@ -580,7 +580,7 @@ You may not assign or transfer these Terms or your rights hereunder, in whole or
 
 a) **To You:** We may provide notice via email to the address associated with your account, through the Service, or by posting on our website.
 
-b) **To Us:** Notices to Skillsmith must be sent via email to legal@skillsmith.io or by mail to our registered address.
+b) **To Us:** Notices to Skillsmith must be sent via email to legal@skillsmith.app or by mail to our registered address.
 
 ### 15.6 Force Majeure
 
@@ -610,11 +610,11 @@ For questions about these Terms of Service, please contact us:
 
 **Skillsmith**
 
-Email: legal@skillsmith.io
-Support: support@skillsmith.io
-Website: https://skillsmith.io
+Email: legal@skillsmith.app
+Support: support@skillsmith.app
+Website: https://skillsmith.app
 
-For Enterprise inquiries: enterprise@skillsmith.io
+For Enterprise inquiries: enterprise@skillsmith.app
 
 ---
 

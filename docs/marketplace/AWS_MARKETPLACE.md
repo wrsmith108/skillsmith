@@ -628,7 +628,7 @@ AWS Marketplace offers a Standard Contract for Software (SCFS) that simplifies p
 
 **SKILLSMITH, INC.**
 
-Contact: legal@skillsmith.io
+Contact: legal@skillsmith.app
 ```
 
 #### Data Processing Addendum (DPA)

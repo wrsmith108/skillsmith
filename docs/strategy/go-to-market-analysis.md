@@ -234,7 +234,7 @@ SSO/SAML features include:
   * Single logout support
 
 Your core Skillsmith features remain fully functional.
-To enable SSO: https://skillsmith.io/enterprise
+To enable SSO: https://skillsmith.app/enterprise
 
 $ skillsmith skill publish --visibility organization
 Error: Organization-visible skills require Team tier.
@@ -245,7 +245,7 @@ Private skill features include:
   * Skill access control
 
 Public skills remain free to publish.
-To enable: https://skillsmith.io/team
+To enable: https://skillsmith.app/team
 ```
 
 ### 4.3 Website Discovery
@@ -325,7 +325,7 @@ function requireFeature(feature: FeatureFlag) {
         currentTier: license.tier,
         // Core features still work!
         coreFeatures: 'All core features remain fully functional',
-        upgradeUrl: `https://skillsmith.io/${getRequiredTier(feature)}`
+        upgradeUrl: `https://skillsmith.app/${getRequiredTier(feature)}`
       });
     }
 

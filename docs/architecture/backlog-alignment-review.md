@@ -116,7 +116,7 @@ Phase 5 is blocking commercialization. Issues need immediate attention:
 ### Gap 3: No Marketing Website
 
 **Missing Issues**:
-- Landing page for skillsmith.io
+- Landing page for skillsmith.app
 - Pricing page
 - Documentation site
 - Blog/changelog

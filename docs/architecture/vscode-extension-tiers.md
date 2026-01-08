@@ -140,7 +140,7 @@ function requiresTier(tier: 'team' | 'enterprise') {
       const license = await getLicense();
       if (!hasAccess(license, tier)) {
         vscode.window.showWarningMessage(
-          `This feature requires ${tier} tier. Upgrade at skillsmith.io/pricing`
+          `This feature requires ${tier} tier. Upgrade at skillsmith.app/pricing`
         );
         return;
       }
@@ -173,7 +173,7 @@ Skillsmith - Skill Discovery for Claude Code
 ★★★★★ (4.8) | 10,000+ installs
 
 FREE for individual developers
-Team & Enterprise plans available at skillsmith.io/pricing
+Team & Enterprise plans available at skillsmith.app/pricing
 ```
 
 ## References

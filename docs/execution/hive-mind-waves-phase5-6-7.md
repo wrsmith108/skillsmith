@@ -118,7 +118,7 @@ Agent 2 (faq):            Build FAQ page
 - Vercel deployment
 
 **Success Criteria**:
-- [ ] Landing page live at skillsmith.io
+- [ ] Landing page live at skillsmith.app
 - [ ] Pricing page shows $0 / $25 / $55 tiers
 - [ ] Documentation searchable
 - [ ] Getting Started guide complete

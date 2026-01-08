@@ -1313,7 +1313,7 @@ We recommend that you:
 3. Enable two-factor authentication if not already enabled
 
 ## Contact Us
-If you have questions, please contact our security team at security@skillsmith.io.
+If you have questions, please contact our security team at security@skillsmith.app.
 
 We apologize for any inconvenience and are committed to protecting your information.
 
