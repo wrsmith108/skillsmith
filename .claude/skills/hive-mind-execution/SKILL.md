@@ -24,12 +24,18 @@ Orchestrates complex task execution using claude-flow hive mind with automatic c
 │  1. INITIALIZE    │  swarm_init with topology                   │
 │  2. PLAN          │  TodoWrite with all tasks batched           │
 │  3. EXECUTE       │  Parallel implementation                    │
-│  4. REVIEW        │  Code review with Task agent                │
+│  4. REVIEW        │  Code review → docs/reviews/ (MANDATORY)    │
 │  5. FIX           │  Address review findings                    │
-│  6. RETRO         │  Retrospective with next steps              │
+│  5.5 GOVERNANCE   │  BLOCKING standards audit gate              │
+│  6. RETRO         │  PROJECT PHASES ONLY (skip if mid-phase)    │
 │  7. DOCUMENT      │  ADR, Linear update, CLAUDE.md              │
 │  8. CLEANUP       │  swarm_destroy, mark issues done            │
 └─────────────────────────────────────────────────────────────────┘
+
+Key:
+- Phase 4: Reviews written to docs/reviews/YYYY-MM-DD-<feature>.md
+- Phase 6: Only at end of project phases, not every hive mind wave
+- Linear issues: Must include details, links, and labels
 ```
 
 ## Phase 1: Initialize Hive Mind
@@ -87,19 +93,85 @@ Execute independent tasks in parallel using file operations:
 
 ## Phase 4: Code Review
 
-Spawn a code review agent after implementation:
+**MANDATORY**: Run code review after ANY code changes. Reviews are written to `docs/reviews/`.
+
+### 4.1 Create Code Review Document
+
+Write review to `docs/reviews/YYYY-MM-DD-<feature-or-issue>.md`:
+
+```markdown
+# Code Review: [Feature/Issue Name]
+
+**Date**: YYYY-MM-DD
+**Reviewer**: Claude Code Review Agent
+**Related Issues**: SMI-XXX, SMI-YYY
+**Files Changed**: X files
+
+## Summary
+[Brief description of changes reviewed]
+
+## Files Reviewed
+| File | Lines Changed | Status |
+|------|---------------|--------|
+| `src/path/file.ts` | +45/-12 | PASS |
+| `tests/path/file.test.ts` | +30/-0 | PASS |
+
+## Review Categories
+
+### Security
+- **Status**: PASS/WARN/FAIL
+- **Findings**: [List any issues]
+- **Recommendations**: [List fixes if needed]
+
+### Error Handling
+- **Status**: PASS/WARN/FAIL
+- **Findings**: [List any issues]
+
+### Backward Compatibility
+- **Status**: PASS/WARN/FAIL
+- **Breaking Changes**: [List if any]
+
+### Best Practices
+- **Status**: PASS/WARN/FAIL
+- **Findings**: [List any issues]
+
+### Documentation
+- **Status**: PASS/WARN/FAIL
+- **Missing Docs**: [List if any]
+
+## Overall Result
+- **PASS**: All checks passed, ready for merge
+- **WARN**: Minor issues, can proceed with notes
+- **FAIL**: Blocking issues must be fixed
+
+## Action Items
+| Item | Priority | Assignee |
+|------|----------|----------|
+| [Fix description] | High/Medium/Low | Developer |
+
+## References
+- [Related ADR](../adr/XXX-decision.md)
+- [Standards Reference](../architecture/standards.md#section)
+```
+
+### 4.2 Spawn Code Review Agent
 
 ```javascript
 Task({
   description: "Code review changes",
-  prompt: `Review the following changes for:
+  prompt: `Review the following changes and write results to docs/reviews/:
+
     1. Security issues (env var handling, secrets exposure)
     2. Error handling completeness
     3. Backward compatibility
     4. Best practices adherence
     5. Documentation completeness
 
-    Provide PASS/WARN/FAIL status for each.`,
+    IMPORTANT:
+    - Write the full review to docs/reviews/YYYY-MM-DD-<feature>.md
+    - Include links to relevant files and line numbers
+    - Provide PASS/WARN/FAIL status for each category
+    - List specific action items with priorities`,
   subagent_type: "general-purpose"
 })
 ```
@@ -110,6 +182,7 @@ Task({
 - [ ] Compatibility: No breaking changes without documentation
 - [ ] Best practices: TypeScript strict, proper typing
 - [ ] Documentation: Comments where needed, types exported
+- [ ] **Review document written to docs/reviews/**
 
 ## Phase 5: Fix Review Findings
 
@@ -123,13 +196,72 @@ Edit("file.ts", old_string, new_string)
 Bash("npm run typecheck && npm run lint")
 ```
 
-## Phase 6: Retrospective
+### 5.1 Run Governance Audit
 
-After code review and fixes, conduct a retrospective to capture lessons learned and identify next steps.
+After addressing review findings, run the governance audit:
+
+```bash
+# Run governance standards check
+docker exec skillsmith-dev-1 npm run audit:standards
+```
+
+This ensures all fixes meet engineering standards before proceeding.
+
+## Phase 5.5: Governance Gate (BLOCKING)
+
+**MANDATORY**: Before retrospective, verify all standards are met. **Workflow STOPS here until PASS.**
+
+```javascript
+// Invoke governance skill - BLOCKS until passing
+Task({
+  description: "Governance code review audit",  // Triggers PostToolUse hook
+  prompt: `Run full governance check:
+    1. Execute: docker exec skillsmith-dev-1 npm run audit:standards
+    2. Verify all standards from standards.md are met
+    3. Report PASS/FAIL with specific violations if any
+
+    BLOCKING: Cannot proceed to Phase 6 until all checks PASS.
+    If violations found, list specific files and fixes required.`,
+  subagent_type: "general-purpose"
+})
+```
+
+**Gate Requirements** (all must pass):
+- [ ] No TypeScript strict mode violations
+- [ ] All files under 500 lines
+- [ ] 99%+ test coverage maintained
+- [ ] No hardcoded secrets
+- [ ] Conventional commit format ready
+
+**On Failure**: Fix all violations, then re-run governance audit.
+
+## Phase 6: Retrospective (PROJECT PHASES ONLY)
+
+> **IMPORTANT**: Retrospectives are conducted ONLY at the end of a **project phase**, NOT after every hive mind wave. Skip this phase if you're in the middle of a larger project phase.
+
+### 6.0 Check if Retrospective is Required
+
+```javascript
+AskUserQuestion({
+  questions: [{
+    question: "Is this the end of a project phase (not just a hive mind wave)?",
+    header: "Retro Check",
+    multiSelect: false,
+    options: [
+      { label: "Yes - End of phase", description: "This completes a major project milestone (e.g., Phase 2a, Phase 3b)" },
+      { label: "No - Continue work", description: "This is just one wave of work within an ongoing phase - skip retro" }
+    ]
+  }]
+})
+```
+
+**If "No - Continue work"**: Skip to Phase 7 (Documentation) or Phase 8 (Cleanup).
+
+**If "Yes - End of phase"**: Proceed with retrospective below.
 
 ### 6.1 Write Retrospective
 
-Write to `docs/retros/<phase-or-feature>.md`:
+Write to `docs/retros/<phase-name>.md` (e.g., `docs/retros/phase-2a-github-indexing.md`):
 
 ```markdown
 # [Phase/Feature] Retrospective
@@ -185,17 +317,60 @@ AskUserQuestion({
 })
 ```
 
-**If "Add all to Linear"**:
+**If "Add all to Linear"**: Create detailed issues with proper structure.
+
+### 6.3 Create Detailed Linear Issues
+
+**REQUIRED**: All Linear issues must include:
+- **Detailed description** with context and acceptance criteria
+- **Links to resources** (code files, docs, ADRs, reviews)
+- **Labels** (priority, type, component)
 
 ```javascript
-// Create issues for all next steps
+// Create detailed issues for each next step
 for (const item of nextSteps) {
-  // Use Linear GraphQL or linear-ops.ts
+  const description = `
+## Context
+${item.context || 'Identified during retrospective for ' + phaseName}
+
+## Acceptance Criteria
+${item.acceptanceCriteria || '- [ ] Criteria to be defined'}
+
+## Technical Details
+${item.technicalDetails || 'See related resources below'}
+
+## Resources
+- [Retrospective](docs/retros/${phaseName}.md)
+- [Code Review](docs/reviews/${reviewDate}-${feature}.md)
+${item.relatedADR ? `- [ADR](docs/adr/${item.relatedADR}.md)` : ''}
+${item.relatedFiles ? item.relatedFiles.map(f => `- [${f}](${f})`).join('\n') : ''}
+
+## Labels
+- Priority: ${item.priority}
+- Type: ${item.type || 'enhancement'}
+- Component: ${item.component || 'core'}
+`;
+
+  // Use Linear GraphQL mutation for full control
   Bash(`varlock run -- npx tsx ~/.claude/skills/linear/skills/linear/scripts/linear-ops.ts create-issue \
     --title "${item.title}" \
-    --priority ${item.priority}`)
+    --description "${description}" \
+    --priority ${item.priority} \
+    --labels "${item.labels?.join(',') || 'enhancement'}"`)
 }
 ```
+
+**Issue Template Fields**:
+
+| Field | Required | Example |
+|-------|----------|---------|
+| Title | Yes | "Implement caching layer for search results" |
+| Description | Yes | Context, acceptance criteria, technical details |
+| Priority | Yes | urgent, high, medium, low |
+| Labels | Yes | enhancement, bug, security, performance |
+| Component | Recommended | core, mcp-server, cli |
+| Related Issues | If applicable | SMI-123, SMI-456 |
+| Resources | Yes | Links to retro, review, ADRs, code files |
 
 **If "Select which to add"**:
 
@@ -211,15 +386,26 @@ AskUserQuestion({
     }))
   }]
 })
+// Then create issues for selected items using the detailed template above
 ```
 
-### 6.3 Link to Retrospective
+### 6.4 Link Issues to Retrospective
 
-After creating issues, add a comment linking to the retrospective:
+After creating issues, update the retrospective with issue links:
 
 ```javascript
-// Add reference to retro in newly created issues
-"See [Retrospective](docs/retros/<name>.md) for context"
+// Append issue links to retrospective
+Edit("docs/retros/<phase>.md",
+  "## Next Steps",
+  `## Next Steps
+
+### Created Issues
+| Issue | Title | Priority | Status |
+|-------|-------|----------|--------|
+| [SMI-XXX](https://linear.app/team/SMI-XXX) | ${item.title} | ${item.priority} | Created |
+
+### Original Next Steps`
+)
 ```
 
 ## Phase 7: Documentation Updates
