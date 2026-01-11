@@ -62,7 +62,7 @@ For contributing to Skillsmith:
 
 ```bash
 # Clone and build
-git clone https://github.com/Smith-Horn-Group/skillsmith.git
+git clone https://github.com/smith-horn/skillsmith.git
 cd skillsmith
 npm install
 npm run build
@@ -229,7 +229,7 @@ For contributing to Skillsmith:
 ### Clone the Repository
 
 ```bash
-git clone https://github.com/Smith-Horn-Group/skillsmith.git
+git clone https://github.com/smith-horn/skillsmith.git
 cd skillsmith
 ```
 
@@ -332,6 +332,6 @@ docker exec skillsmith-dev-1 npm rebuild
 
 ## Getting Help
 
-- [GitHub Issues](https://github.com/Smith-Horn-Group/skillsmith/issues) - Report bugs
-- [Discussions](https://github.com/Smith-Horn-Group/skillsmith/discussions) - Ask questions
+- [GitHub Issues](https://github.com/smith-horn/skillsmith/issues) - Report bugs
+- [Discussions](https://github.com/smith-horn/skillsmith/discussions) - Ask questions
 - [CLAUDE.md](../CLAUDE.md) - AI development context
