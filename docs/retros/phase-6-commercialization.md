@@ -1,9 +1,19 @@
 # Phase 6 Retrospective: Commercialization
 
+> ⚠️ **HISTORICAL DOCUMENT**
+>
+> This retrospective documents Phase 6 (January 2026) which established the **original** commercialization model.
+> Phase 7 (January 11, 2026) significantly updated this model:
+> - License changed from **Apache-2.0 → Elastic License 2.0**
+> - Added **Individual tier** ($9.99/mo, 10,000 API calls)
+> - Implemented **usage-based quotas** for all tiers
+>
+> See [ADR-013](../adr/013-open-core-licensing.md) and [ADR-017](../adr/017-quota-enforcement-system.md) for current model.
+
 **Date**: January 2, 2026
 **Sprint Duration**: ~2 hours (Hive Mind orchestrated execution)
 **Approach**: Parallel agent execution with PR merge and Linear integration
-**Status**: COMPLETE
+**Status**: COMPLETE (Note: Model updated in Phase 7)
 
 ## Summary
 

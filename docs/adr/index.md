@@ -21,10 +21,11 @@ ADRs document significant architectural decisions made during the project. They 
 | [ADR-010](010-codebase-analysis-scope.md) | Codebase Analysis Scope (TS/JS Only) | Accepted | 2025-12-30 |
 | [ADR-011](011-integration-test-database.md) | Integration Test Database Strategy | Accepted | 2025-12-30 |
 | [ADR-012](012-native-module-version-management.md) | Native Module Version Management Strategy | Accepted | 2025-12-31 |
-| [ADR-013](013-open-core-licensing.md) | Open Core Licensing Model | Accepted | 2026-01-02 |
-| [ADR-014](014-enterprise-package-architecture.md) | Enterprise Package Architecture | Accepted | 2026-01-02 |
+| [ADR-013](013-open-core-licensing.md) | Open Core Licensing Model | **Updated** | 2026-01-02 (Updated: 2026-01-11) |
+| [ADR-014](014-enterprise-package-architecture.md) | Enterprise Package Architecture | **Updated** | 2026-01-02 (Updated: 2026-01-11) |
 | [ADR-015](015-immutable-audit-log-storage.md) | Immutable Audit Log Storage with SHA-256 Hash Chains | Accepted | 2026-01-04 |
 | [ADR-016](016-vercel-api-proxy.md) | Vercel API Proxy for Custom Domain | Accepted | 2026-01-08 |
+| [ADR-017](017-quota-enforcement-system.md) | Quota Enforcement System | **New** | 2026-01-11 |
 
 ### Legacy ADRs (Pre-Implementation Design Phase)
 

@@ -1,7 +1,15 @@
 # Phase 6 Architecture Review
 
+> ⚠️ **HISTORICAL DOCUMENT**
+>
+> This review documents Phase 6 architecture (January 2026). The commercialization model was updated:
+> - License: **Apache-2.0 → Elastic License 2.0**
+> - Added **Individual tier** ($9.99/mo) with usage quotas
+>
+> See [ADR-013](../adr/013-open-core-licensing.md) and [ADR-017](../adr/017-quota-enforcement-system.md) for current model.
+
 **Date**: January 2, 2026
-**Status**: Complete
+**Status**: Complete (Note: Model updated in Phase 7)
 **Linear Issues Created**: SMI-940 through SMI-950
 
 ---

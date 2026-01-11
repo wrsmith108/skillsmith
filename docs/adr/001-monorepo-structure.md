@@ -61,20 +61,23 @@ The monorepo has expanded to include additional packages:
 
 ```
 packages/
-├── core/              # @skillsmith/core (Apache-2.0)
-├── mcp-server/        # @skillsmith/mcp-server (Apache-2.0)
-├── cli/               # @skillsmith/cli (Apache-2.0)
-├── vscode-extension/  # @skillsmith/vscode-extension (Apache-2.0)
-└── enterprise/        # @skillsmith/enterprise (Proprietary) [Planned]
+├── core/              # @skillsmith/core (Elastic-2.0)
+├── mcp-server/        # @skillsmith/mcp-server (Elastic-2.0)
+├── cli/               # @skillsmith/cli (Elastic-2.0)
+├── vscode-extension/  # @skillsmith/vscode-extension (Elastic-2.0)
+└── enterprise/        # @skillsmith/enterprise (Elastic-2.0, proprietary features)
 ```
+
+> **License Update (January 2026)**: All packages migrated from Apache-2.0 to Elastic License 2.0. See [ADR-013](./013-open-core-licensing.md).
 
 **VS Code Extension** (added Phase 3):
 - MCP client for VS Code integration
 - See ADR-005 for architecture details
 
-**Enterprise Package** (planned Phase 7):
+**Enterprise Package** (Phase 7):
 - Proprietary features for commercial tiers
-- See ADR-013 (Open Core Licensing) and ADR-014 (Enterprise Architecture)
+- Usage quota enforcement
+- See ADR-013 (Open Core Licensing), ADR-014 (Enterprise Architecture), and ADR-017 (Quota Enforcement)
 
 ### Package Dependencies
 

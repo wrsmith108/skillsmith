@@ -6,10 +6,13 @@ This document describes how to configure npm publishing for Skillsmith packages.
 
 | Package | Registry | Access | License |
 |---------|----------|--------|---------|
-| `@skillsmith/core` | npmjs.org | Public | Apache-2.0 |
-| `@skillsmith/mcp-server` | npmjs.org | Public | Apache-2.0 |
-| `@skillsmith/cli` | npmjs.org | Public | Apache-2.0 |
-| `@smith-horn-group/enterprise` | npm.pkg.github.com | Restricted | Proprietary |
+| `@skillsmith/core` | npmjs.org | Public | **Elastic-2.0** |
+| `@skillsmith/mcp-server` | npmjs.org | Public | **Elastic-2.0** |
+| `@skillsmith/cli` | npmjs.org | Public | **Elastic-2.0** |
+| `@skillsmith/vscode-extension` | npmjs.org | Public | **Elastic-2.0** |
+| `@smith-horn-group/enterprise` | npm.pkg.github.com | Restricted | **Elastic-2.0** (proprietary features) |
+
+> **Note (January 2026)**: All packages migrated from Apache-2.0 to Elastic License 2.0. See [ADR-013](../adr/013-open-core-licensing.md).
 
 ## Prerequisites
 

@@ -1,5 +1,11 @@
 # Phase 5A: npm Publishing Pipeline - Retrospective
 
+> ⚠️ **HISTORICAL DOCUMENT**
+>
+> This retrospective documents Phase 5A (January 2025). The license model was updated in January 2026:
+> - License: **Apache-2.0 → Elastic License 2.0**
+> - See [ADR-013](../adr/013-open-core-licensing.md) for current licensing.
+
 **Date**: January 4, 2025
 **Duration**: ~45 minutes
 **Issues**: SMI-1048, SMI-1049, SMI-1050, SMI-1051, SMI-1052

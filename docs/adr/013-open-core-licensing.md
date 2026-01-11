@@ -1,38 +1,56 @@
 # ADR-013: Open Core Licensing Model
 
-**Status**: Accepted
-**Date**: 2026-01-02
+**Status**: Accepted → **Superseded by ADR-013.1 (2026-01-11)**
+**Date**: 2026-01-02 (Original) | 2026-01-11 (Updated)
 **Deciders**: Skillsmith Team
+
+## Revision History
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.0 | 2026-01-02 | Original three-tier Apache-2.0 model |
+| 1.1 | 2026-01-11 | **License change to Elastic License 2.0**, added Individual tier, implemented usage-based quotas |
 
 ## Context
 
-Phase 6 established an Open Core licensing model to balance community adoption with sustainable revenue generation. The model addresses the need for:
+Phase 6 established an Open Core licensing model to balance community adoption with sustainable revenue generation. Phase 7 evolved this to Elastic License 2.0 with usage-based quotas. The model addresses the need for:
 
-1. **Community Growth**: Enabling wide adoption through open source core functionality
-2. **Revenue Sustainability**: Generating predictable revenue through commercial tiers
+1. **Community Growth**: Enabling wide adoption through source-available core functionality
+2. **Revenue Sustainability**: Generating predictable revenue through commercial tiers with usage quotas
 3. **Enterprise Requirements**: Providing advanced features (SSO, RBAC, audit logging, private registries) that enterprises require
 4. **Contributor Protection**: Ensuring enterprise contributions don't inadvertently become open source
+5. **Managed Service Protection**: Preventing third parties from offering Skillsmith as a hosted service (Elastic License 2.0 restriction)
 
-The three-tier structure was designed as follows:
-- **Community Tier**: Apache-2.0 (free, open source)
-- **Team Tier**: $25/user/month (commercial license)
-- **Enterprise Tier**: $55/user/month (proprietary features)
+The **four-tier structure** (updated 2026-01-11) is as follows:
+- **Community Tier**: Elastic-2.0 (free, 1,000 API calls/month)
+- **Individual Tier**: $9.99/month (10,000 API calls/month) - **NEW**
+- **Team Tier**: $25/user/month (100,000 API calls/month)
+- **Enterprise Tier**: $55/user/month (unlimited API calls)
 
 See [TERMS.md](../legal/TERMS.md) for complete pricing and licensing terms.
 
 ## Decision
 
-### 1. Core Packages Remain Apache-2.0
+### 1. All Packages Licensed Under Elastic License 2.0 (Updated 2026-01-11)
 
-The following packages are licensed under Apache License 2.0 and will remain fully open source:
+**License Change (January 2026)**: All packages were migrated from Apache-2.0 to Elastic License 2.0 to:
+- Prevent cloud providers from offering Skillsmith as a managed service
+- Protect license key enforcement mechanisms from circumvention
+- Maintain source-available status for transparency and self-hosting
 
 | Package | Purpose | License |
 |---------|---------|---------|
-| `@skillsmith/core` | Database, repositories, services | Apache-2.0 |
-| `@skillsmith/mcp-server` | MCP tools (search, install, etc.) | Apache-2.0 |
-| `@skillsmith/cli` | Command-line interface | Apache-2.0 |
+| `@skillsmith/core` | Database, repositories, services | **Elastic-2.0** |
+| `@skillsmith/mcp-server` | MCP tools (search, install, etc.) | **Elastic-2.0** |
+| `@skillsmith/cli` | Command-line interface | **Elastic-2.0** |
+| `@skillsmith/vscode-extension` | VS Code integration | **Elastic-2.0** |
+| `@skillsmith/enterprise` | Enterprise features | **Elastic-2.0** (proprietary features) |
 
-These packages provide all fundamental skill discovery functionality without commercial restrictions.
+**Elastic License 2.0 Restrictions:**
+1. You may not provide the software to third parties as a hosted or managed service
+2. You may not circumvent license key functionality or remove/obscure features protected by license keys
+
+These packages provide all fundamental skill discovery functionality. Self-hosting for internal use is permitted.
 
 ### 2. Enterprise Package Is Proprietary
 
@@ -50,17 +68,21 @@ See [ENTERPRISE_PACKAGE.md](../enterprise/ENTERPRISE_PACKAGE.md) for complete fe
 
 ### 3. VS Code Extension Licensing
 
-The VS Code extension (`@skillsmith/vscode-extension`) is licensed under Apache-2.0 with the following behavior:
+The VS Code extension (`@skillsmith/vscode-extension`) is licensed under Elastic License 2.0 with the following behavior:
 
-- Core functionality is fully open source
+- Core functionality is source-available under Elastic-2.0
 - Enterprise features are enabled via license key detection
+- Quota enforcement applies based on license tier
 - The extension checks for `@skillsmith/enterprise` availability at runtime
-- No proprietary code is embedded in the extension itself
 
 ```typescript
-// Enterprise feature detection pattern
-const hasEnterprise = await detectEnterprisePackage();
-if (hasEnterprise && await validateLicense()) {
+// License and quota detection pattern
+const licenseStatus = await getLicenseStatus();
+const quotaStatus = await checkQuotaRemaining();
+
+if (quotaStatus.remaining === 0 && licenseStatus.tier !== 'enterprise') {
+  displayUpgradePrompt(quotaStatus);
+} else if (licenseStatus.tier === 'enterprise') {
   enableEnterpriseFeatures();
 }
 ```
@@ -125,38 +147,70 @@ The CLA ensures:
 - **Cons**: GPL compatibility issues with many enterprise environments, complex for integrators
 - **Why rejected**: GPL's copyleft requirements create friction for enterprise adoption and integration with other tools
 
-### Alternative 4: Source Available (BSL/SSPL)
+### Alternative 4: Source Available (BSL/SSPL/Elastic-2.0) ✅ **ADOPTED (2026-01-11)**
 
-- **Pros**: Code visible, time-delayed open source, protects against cloud exploitation
-- **Cons**: Not OSI-approved, confusing for users, limited ecosystem compatibility
-- **Why rejected**: Source-available licenses create uncertainty and are not recognized as true open source
+- **Pros**: Code visible, protects against cloud exploitation, allows self-hosting
+- **Cons**: Not OSI-approved, some community concerns about "open washing"
+- **Why adopted (2026-01-11)**: Elastic License 2.0 provides optimal balance:
+  - Prevents cloud providers from competing with hosted Skillsmith
+  - Allows full self-hosting for internal use
+  - Well-understood in the industry (Elastic, MongoDB precedents)
+  - Simpler than BSL time-delay mechanism
 
 ## Publishing Strategy
 
-The open core model enables a staged publishing approach:
+The source-available model enables a staged publishing approach:
 
 | Package | Registry | License | Phase |
 |---------|----------|---------|-------|
-| `@skillsmith/core` | Public npm | Apache-2.0 | 5A (immediate) |
-| `@skillsmith/mcp-server` | Public npm | Apache-2.0 | 5A (immediate) |
-| `@skillsmith/cli` | Public npm | Apache-2.0 | 5A (immediate) |
-| `@skillsmith/enterprise` | Private npm | Proprietary | 7 (after gating) |
+| `@skillsmith/core` | Public npm | **Elastic-2.0** | 5A (immediate) |
+| `@skillsmith/mcp-server` | Public npm | **Elastic-2.0** | 5A (immediate) |
+| `@skillsmith/cli` | Public npm | **Elastic-2.0** | 5A (immediate) |
+| `@skillsmith/vscode-extension` | Public npm | **Elastic-2.0** | 5A (immediate) |
+| `@skillsmith/enterprise` | Private npm | **Elastic-2.0** (proprietary features) | 7 (after gating) |
 
-**Key Insight**: Free tier packages can be published and tested before billing infrastructure is complete. Enterprise package requires license validation (Phase 5B) and feature gating to be in place first.
+**Key Insight**: All packages use Elastic License 2.0. Enterprise package requires license validation (Phase 5B) and feature gating to be in place first.
 
-## Commercialization Strategy
+## Commercialization Strategy (Updated 2026-01-11)
 
-This ADR uses **feature bifurcation** (not usage limits):
-- No rate limiting on core features
-- No install/search quotas
-- Feature flags in JWT payload determine tier access
-- See [go-to-market-analysis.md](../strategy/go-to-market-analysis.md) for details
+This ADR uses **hybrid monetization** combining feature bifurcation with usage quotas:
+
+### Usage-Based Quotas (New in Phase 7)
+
+| Tier | Price | API Calls/Month | Over-Limit Behavior |
+|------|-------|-----------------|---------------------|
+| Community | Free | 1,000 | Hard block, upgrade prompt |
+| Individual | $9.99/mo | 10,000 | Hard block, upgrade prompt |
+| Team | $25/user/mo | 100,000 | Hard block, upgrade prompt |
+| Enterprise | $55/user/mo | Unlimited | N/A |
+
+### Warning Threshold System
+
+| Usage % | UI Behavior |
+|---------|-------------|
+| 0-79% | Normal operation, dim quota display |
+| 80-89% | Yellow warning, "Approaching limit" |
+| 90-99% | Yellow warning box, upgrade CTA |
+| 100% | Red error, hard block, upgrade required |
+
+### Feature Bifurcation (Unchanged)
+
+Enterprise-only features remain gated by license tier:
+- SSO/SAML integration
+- Role-based access control (RBAC)
+- Audit logging with SIEM export
+- Private skill registry
+
+See [ADR-017: Quota Enforcement System](./017-quota-enforcement-system.md) for implementation details.
+See [go-to-market-analysis.md](../strategy/go-to-market-analysis.md) for market strategy.
 
 ## References
 
 - [TERMS.md](../legal/TERMS.md) - Complete Terms of Service with pricing tiers
 - [ENTERPRISE_PACKAGE.md](../enterprise/ENTERPRISE_PACKAGE.md) - Enterprise feature specifications
 - [go-to-market-analysis.md](../strategy/go-to-market-analysis.md) - Feature bifurcation strategy
-- [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0)
-- [ADR-001: Monorepo Structure](./001-monorepo-structure.md)
+- [Elastic License 2.0](https://www.elastic.co/licensing/elastic-license) - Current license
+- [ADR-001: Monorepo Structure](./001-monorepo-structure.md) - Package organization
+- [ADR-014: Enterprise Package Architecture](./014-enterprise-package-architecture.md) - Enterprise implementation
+- [ADR-017: Quota Enforcement System](./017-quota-enforcement-system.md) - Usage quota implementation
 - [Open Core Model Best Practices](https://opensource.guide/legal/)

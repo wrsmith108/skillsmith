@@ -1,9 +1,24 @@
 # Skillsmith Go-to-Market Analysis
 
+> ⚠️ **HISTORICAL DOCUMENT - SUPERSEDED**
+>
+> **This document reflects the original Phase 6 strategy (January 2026) and is now OUTDATED.**
+>
+> Key changes since this document:
+> - **License**: Changed from Apache-2.0 to **Elastic License 2.0**
+> - **Pricing**: Added **Individual tier** ($9.99/mo)
+> - **Quotas**: Implemented **usage-based quotas** (1K/10K/100K/unlimited)
+> - **Strategy**: Changed from "feature bifurcation only" to "hybrid feature + usage" model
+>
+> **Current authoritative references:**
+> - [ADR-013: Open Core Licensing](../adr/013-open-core-licensing.md)
+> - [ADR-017: Quota Enforcement](../adr/017-quota-enforcement-system.md)
+> - [packages/enterprise/src/license/quotas.ts](../../packages/enterprise/src/license/quotas.ts)
+
 **Date**: January 4, 2026
-**Status**: Draft for Review
+**Status**: ~~Draft for Review~~ **ARCHIVED** (Superseded January 11, 2026)
 **Author**: Strategy Review
-**Revision**: 2.0 - Feature Bifurcation Model
+**Revision**: 2.0 - Feature Bifurcation Model (SUPERSEDED by Hybrid Model)
 
 ---
 

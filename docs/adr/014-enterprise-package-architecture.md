@@ -1,19 +1,26 @@
 # ADR-014: Enterprise Package Architecture
 
-**Status**: Accepted
-**Date**: 2025-01-02
+**Status**: Accepted (Updated 2026-01-11)
+**Date**: 2025-01-02 (Original) | 2026-01-11 (Updated for Elastic-2.0 and Quotas)
 **Deciders**: Skillsmith Team
+
+## Revision History
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.0 | 2025-01-02 | Original enterprise package architecture |
+| 1.1 | 2026-01-11 | Updated for Elastic-2.0 license, added quota enforcement middleware, added Individual tier |
 
 ## Context
 
-Phase 6 commercialization requires a proprietary `@skillsmith/enterprise` package that integrates with the open source core packages while maintaining clear separation between open source and proprietary code.
+Phase 6 commercialization requires a proprietary `@skillsmith/enterprise` package that integrates with the source-available core packages while maintaining clear separation between core and proprietary code.
 
-Current `packages/` structure:
-- `core` - Apache-2.0 (database, repositories, services)
-- `mcp-server` - Apache-2.0 (MCP tools for Claude Code)
-- `cli` - Apache-2.0 (command-line interface)
-- `vscode-extension` - Apache-2.0 (VS Code integration)
-- `enterprise` - **Proprietary** (new package for enterprise features)
+Current `packages/` structure (all Elastic-2.0 as of 2026-01-11):
+- `core` - **Elastic-2.0** (database, repositories, services)
+- `mcp-server` - **Elastic-2.0** (MCP tools for Claude Code)
+- `cli` - **Elastic-2.0** (command-line interface)
+- `vscode-extension` - **Elastic-2.0** (VS Code integration)
+- `enterprise` - **Elastic-2.0** (proprietary features, not open source)
 
 Enterprise customers require features that are not suitable for open source distribution:
 - SSO/SAML authentication with enterprise identity providers
@@ -24,9 +31,9 @@ Enterprise customers require features that are not suitable for open source dist
 
 ## Decision
 
-### 1. Create `packages/enterprise/` with Proprietary License
+### 1. Create `packages/enterprise/` with Proprietary Features
 
-The enterprise package will be licensed under a commercial proprietary license, separate from the Apache-2.0 licensed core packages. This enables monetization while keeping the core open source.
+The enterprise package is licensed under Elastic License 2.0 (same as core packages) but contains proprietary features not available in other packages. This enables monetization while keeping the core source-available.
 
 ### 2. Enterprise Depends on `@skillsmith/core` as Peer Dependency
 
@@ -128,22 +135,57 @@ The enterprise package will NOT be published to the public npm registry.
 
 ### Middleware Hooks in MCP Server
 
-License validation is enforced via middleware in `@skillsmith/mcp-server`:
+License validation and quota enforcement are enforced via middleware in `@skillsmith/mcp-server`:
 
 ```typescript
 // In @skillsmith/mcp-server
 import { LicenseValidator } from '@skillsmith/enterprise';
+import { createQuotaMiddleware, createLicenseMiddleware } from './middleware';
 
-const enterpriseMiddleware = async (req, res, next) => {
-  if (isEnterpriseFeature(req.tool)) {
-    const license = await licenseValidator.validate(process.env.SKILLSMITH_LICENSE_KEY);
-    if (!license.valid || !license.hasFeature(req.tool)) {
-      return res.error('Enterprise license required');
+// License middleware - validates JWT and determines tier
+const licenseMiddleware = createLicenseMiddleware();
+
+// Quota middleware - enforces API call limits
+const quotaMiddleware = createQuotaMiddleware();
+
+const requestHandler = async (toolName, params) => {
+  // 1. Get license info
+  const licenseInfo = await licenseMiddleware.getLicenseInfo();
+
+  // 2. Check quota before executing tool
+  const quotaResult = await quotaMiddleware.checkAndTrack(toolName, licenseInfo);
+  if (!quotaResult.allowed) {
+    return quotaMiddleware.buildExceededResponse(quotaResult);
+  }
+
+  // 3. Check enterprise feature access
+  if (isEnterpriseFeature(toolName)) {
+    if (!licenseInfo?.valid || licenseInfo.tier !== 'enterprise') {
+      return { error: 'Enterprise license required' };
     }
   }
-  next();
+
+  // 4. Execute tool and include quota metadata
+  const result = await executeTool(toolName, params);
+  return {
+    ...result,
+    _meta: { quota: quotaMiddleware.buildMetadata(quotaResult) }
+  };
 };
 ```
+
+### Quota Enforcement (Added 2026-01-11)
+
+The MCP server enforces usage quotas per license tier:
+
+| Tier | API Calls/Month | Enforcement |
+|------|-----------------|-------------|
+| Community | 1,000 | Hard block at limit |
+| Individual | 10,000 | Hard block at limit |
+| Team | 100,000 | Hard block at limit |
+| Enterprise | Unlimited | No enforcement |
+
+See [ADR-017: Quota Enforcement System](./017-quota-enforcement-system.md) for detailed implementation.
 
 ### Enhanced Audit Events Extending Core AuditLogger
 
@@ -185,7 +227,7 @@ interface SSOSession {
 ### Positive
 
 - **Clear separation of proprietary code** - Enterprise features are isolated in a single package with distinct licensing
-- **Core remains fully open source** - Apache-2.0 license maintained for all core packages
+- **Core remains source-available** - Elastic License 2.0 maintained for all packages
 - **Enterprise features are modular** - Customers can use only the features they need
 - **Predictable revenue model** - License-based feature gating enables tiered pricing
 - **Compliance-ready** - SIEM integration and audit logging support SOC2/HIPAA requirements
@@ -227,6 +269,9 @@ interface SSOSession {
 
 - [ENTERPRISE_PACKAGE.md](../enterprise/ENTERPRISE_PACKAGE.md) - Detailed feature specifications
 - [ADR-001: Monorepo Structure](./001-monorepo-structure.md) - Workspace architecture
+- [ADR-013: Open Core Licensing](./013-open-core-licensing.md) - License model and tier structure
+- [ADR-017: Quota Enforcement System](./017-quota-enforcement-system.md) - Usage quota implementation
+- [Elastic License 2.0](https://www.elastic.co/licensing/elastic-license) - Current license
 - [JWT RFC 7519](https://datatracker.ietf.org/doc/html/rfc7519) - License key format
 - [SAML 2.0 Specification](https://docs.oasis-open.org/security/saml/v2.0/) - SSO protocol
 - [OpenID Connect Core](https://openid.net/specs/openid-connect-core-1_0.html) - OIDC integration

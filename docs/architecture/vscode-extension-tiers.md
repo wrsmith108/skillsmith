@@ -1,29 +1,32 @@
 # VS Code Extension Commercial Tiers
 
-**Date**: January 2, 2026
-**Status**: Approved
+**Date**: January 2, 2026 (Updated: January 11, 2026)
+**Status**: Approved (Updated for Elastic-2.0 and 4-tier model)
 **Issue**: SMI-949
 
 ---
 
 ## Overview
 
-The VS Code extension (`@skillsmith/vscode-extension`) is distributed under Apache-2.0 license with runtime feature detection for commercial tiers.
+The VS Code extension (`@skillsmith/vscode-extension`) is distributed under **Elastic License 2.0** with runtime feature detection for commercial tiers and **usage quota enforcement**.
+
+> **Note (January 2026)**: License changed from Apache-2.0 to Elastic License 2.0. Individual tier added. Usage quotas now apply.
 
 ## Tier Assignment
 
-| Tier | Price | VS Code Extension | Features |
-|------|-------|-------------------|----------|
-| **Community** | Free | ✅ Included | Core skill discovery, install, search |
-| **Team** | $25/user/mo | ✅ Same extension | + Team dashboard, usage analytics |
-| **Enterprise** | $69/user/mo | ✅ Same extension | + SSO, private registry, audit |
+| Tier | Price | API Calls/Month | VS Code Extension | Features |
+|------|-------|-----------------|-------------------|----------|
+| **Community** | Free | 1,000 | ✅ Included | Core skill discovery, install, search |
+| **Individual** | $9.99/mo | 10,000 | ✅ Same extension | + Basic analytics, email support |
+| **Team** | $25/user/mo | 100,000 | ✅ Same extension | + Team dashboard, usage analytics |
+| **Enterprise** | $55/user/mo | Unlimited | ✅ Same extension | + SSO, private registry, audit |
 
 ## Architecture
 
 ### Single Extension, Multiple Tiers
 
 ```
-@skillsmith/vscode-extension (Apache-2.0)
+@skillsmith/vscode-extension (Elastic-2.0)
 ├── Core Features (always available)
 │   ├── Skill search
 │   ├── Skill install/uninstall

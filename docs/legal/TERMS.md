@@ -1,7 +1,8 @@
 # Skillsmith Terms of Service
 
-**Effective Date:** January 2, 2026
-**Last Updated:** January 2, 2026
+**Effective Date:** January 11, 2026
+**Last Updated:** January 11, 2026
+**Version:** 2.0 (Elastic License 2.0 Update)
 
 ---
 
@@ -29,49 +30,93 @@ Skillsmith is a Model Context Protocol (MCP) server designed for Claude Code ski
 
 ### 2.2 Service Tiers
 
-The Service is offered under three distinct tiers:
+The Service is offered under four distinct tiers, each with defined API call quotas:
 
 **a) Community Tier (Free)**
-- Licensed under Apache License, Version 2.0
+- Licensed under Elastic License 2.0
 - Access to core skill discovery functionality
+- **API Quota: 1,000 API calls per month**
 - Community support via public forums
 - No service level guarantees
 
-**b) Team Tier ($25.00 USD per user per month)**
+**b) Individual Tier ($9.99 USD per month)**
+- Licensed under Elastic License 2.0
+- Access to core skill discovery functionality
+- **API Quota: 10,000 API calls per month**
+- Basic analytics and usage reporting
+- Email support
+- No service level guarantees
+
+**c) Team Tier ($25.00 USD per user per month)**
 - Commercial license with enhanced features
+- **API Quota: 100,000 API calls per month (pooled across team)**
 - Priority email support
-- Team collaboration features
+- Team collaboration features (workspaces, private skills)
+- Usage analytics dashboard
 - 99.5% uptime service level target
 - Access to premium skill repositories
 
-**c) Enterprise Tier ($55.00 USD per user per month)**
+**d) Enterprise Tier ($55.00 USD per user per month)**
 - Enterprise commercial license
+- **API Quota: Unlimited**
 - Dedicated support with 4-hour response time
 - Custom integrations and deployment options
 - 99.9% uptime service level commitment
-- Advanced security and compliance features
+- Advanced security and compliance features (SSO/SAML, RBAC, audit logging)
 - Custom SLA terms available
 - On-premises deployment options
+
+### 2.3 API Quota Enforcement
+
+a) API calls are tracked on a monthly billing cycle basis and reset at the start of each billing period.
+
+b) When quota is exhausted, further API calls will be blocked until quota resets or the account is upgraded.
+
+c) Warning notifications are provided at 80% and 90% quota usage.
+
+d) There is no grace period or overage billing; quotas are enforced as hard limits.
+
+e) Unused API calls do not roll over to subsequent billing periods.
 
 ---
 
 ## 3. LICENSE GRANTS
 
-### 3.1 Community Tier License (Apache-2.0)
+### 3.1 All Tiers License (Elastic License 2.0)
 
-For the Community Tier, the Service is provided under the Apache License, Version 2.0 (the "Apache License"). Subject to the terms and conditions of the Apache License, we hereby grant you a perpetual, worldwide, non-exclusive, no-charge, royalty-free, irrevocable license to:
+All Service tiers are provided under the Elastic License 2.0 (the "Elastic License"). Subject to the terms and conditions of the Elastic License, we hereby grant you a non-exclusive, worldwide, royalty-free license to:
 
-a) Reproduce, prepare derivative works of, publicly display, publicly perform, sublicense, and distribute the Work and such derivative works in Source or Object form;
+a) Use the software for any purpose, including commercial applications and internal business use;
 
-b) Grant sublicenses to third parties, including without limitation, the right to distribute the licensed materials in binary form under any license that does not contradict the terms and conditions of the Apache License;
+b) Copy, modify, and create derivative works of the software for your own use;
 
-c) Use the software for any lawful purpose, including commercial applications.
+c) Redistribute the software in source or binary form, subject to the limitations below.
 
-The complete Apache License 2.0 terms are incorporated herein by reference and are available at: https://www.apache.org/licenses/LICENSE-2.0
+**IMPORTANT LIMITATIONS (Elastic License 2.0):**
 
-### 3.2 Team Tier License
+You may NOT:
 
-For the Team Tier, subject to your payment of all applicable fees and compliance with these Terms, we grant you a limited, non-exclusive, non-transferable, non-sublicensable license to:
+a) **Provide the software to third parties as a hosted or managed service** where the service provides users with access to any substantial set of the features or functionality of the software;
+
+b) **Circumvent or remove any license key functionality** or other features that are designed to enforce the licensing terms of the software;
+
+c) **Remove or obscure any licensing, copyright, or other notices** from the software.
+
+The complete Elastic License 2.0 terms are incorporated herein by reference and are available at: https://www.elastic.co/licensing/elastic-license
+
+### 3.2 Individual Tier License
+
+For the Individual Tier, subject to your payment of all applicable fees and compliance with these Terms, you receive the Elastic License 2.0 rights above plus:
+
+a) Access to basic analytics and usage reporting features;
+
+b) Email support for technical issues;
+
+c) API quota of 10,000 calls per month.
+
+### 3.3 Team Tier License
+
+For the Team Tier, subject to your payment of all applicable fees and compliance with these Terms, you receive the Elastic License 2.0 rights above plus a limited, non-exclusive, non-transferable, non-sublicensable license to:
 
 a) Access and use the Service for your internal business purposes;
 
@@ -81,7 +126,7 @@ c) Create and distribute works that interface with or utilize the Service, provi
 
 d) Access premium features, skill repositories, and enhanced functionality as described in the Team Tier documentation.
 
-### 3.3 Enterprise Tier License
+### 3.4 Enterprise Tier License
 
 For the Enterprise Tier, subject to your payment of all applicable fees, execution of an Enterprise Agreement (if applicable), and compliance with these Terms, we grant you a limited, non-exclusive, non-transferable license to:
 
@@ -95,7 +140,7 @@ d) Sublicense the Service to your affiliates and subsidiaries, provided they agr
 
 e) Access advanced security, compliance, and administrative features.
 
-### 3.4 License Restrictions
+### 3.5 License Restrictions
 
 Except as expressly permitted under the applicable license tier, you shall not:
 
@@ -143,15 +188,23 @@ We reserve the right to suspend or terminate your account at any time for violat
 
 ### 5.1 Fees and Billing
 
-**a) Team Tier Pricing**
+**a) Individual Tier Pricing**
+- Monthly subscription: $9.99 USD per month
+- Annual subscription (prepaid): $99.00 USD per year (approximately 17% discount)
+- Billing cycle begins on the date of initial subscription
+- API quota: 10,000 calls per month
+
+**b) Team Tier Pricing**
 - Monthly subscription: $25.00 USD per user per month
 - Annual subscription (prepaid): $250.00 USD per user per year (approximately 17% discount)
 - Billing cycle begins on the date of initial subscription
+- API quota: 100,000 calls per month (pooled)
 
-**b) Enterprise Tier Pricing**
+**c) Enterprise Tier Pricing**
 - Monthly subscription: $55.00 USD per user per month
 - Annual subscription (prepaid): $550.00 USD per user per year (approximately 17% discount)
 - Custom pricing available for large deployments (100+ users)
+- API quota: Unlimited
 
 ### 5.2 Payment Methods
 
@@ -352,17 +405,21 @@ We retain your data for as long as your account is active or as needed to provid
 
 ### 10.1 Term
 
-a) **Community Tier:** Your license continues indefinitely subject to compliance with the Apache License 2.0 and these Terms.
+a) **Community Tier:** Your license continues indefinitely subject to compliance with the Elastic License 2.0 and these Terms.
 
-b) **Team and Enterprise Tiers:** Your subscription continues for the initial term and automatically renews for successive periods of the same duration unless terminated.
+b) **Individual Tier:** Your subscription continues for the billing period and automatically renews unless canceled.
+
+c) **Team and Enterprise Tiers:** Your subscription continues for the initial term and automatically renews for successive periods of the same duration unless terminated.
 
 ### 10.2 Termination for Convenience
 
 a) **Community Tier:** You may stop using the Service at any time.
 
-b) **Team Tier:** You may cancel your subscription at any time. Cancellation takes effect at the end of the current billing period. No refunds for partial periods.
+b) **Individual Tier:** You may cancel your subscription at any time. Cancellation takes effect at the end of the current billing period. No refunds for partial periods.
 
-c) **Enterprise Tier:** Either party may terminate with sixty (60) days' written notice prior to the end of the current term. Early termination may be subject to fees as specified in your Enterprise Agreement.
+c) **Team Tier:** You may cancel your subscription at any time. Cancellation takes effect at the end of the current billing period. No refunds for partial periods.
+
+d) **Enterprise Tier:** Either party may terminate with sixty (60) days' written notice prior to the end of the current term. Early termination may be subject to fees as specified in your Enterprise Agreement.
 
 ### 10.3 Termination for Cause
 
@@ -394,7 +451,7 @@ a) All licenses granted to you under these Terms immediately terminate;
 
 b) You must cease all use of the Service;
 
-c) You must delete all copies of the Service in your possession (except Community Tier under Apache 2.0);
+c) You must delete all copies of the Service in your possession (except as permitted under Elastic License 2.0);
 
 d) We will provide a reasonable opportunity to export your data (minimum thirty (30) days for paid tiers);
 
@@ -624,4 +681,4 @@ BY USING THE SERVICE, YOU ACKNOWLEDGE THAT YOU HAVE READ THESE TERMS OF SERVICE,
 
 ---
 
-*This document was last updated on January 4, 2026.*
+*This document was last updated on January 11, 2026 (Version 2.0 - Elastic License 2.0 Update).*
