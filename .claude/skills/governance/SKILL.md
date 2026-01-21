@@ -80,11 +80,46 @@ The `npm run audit:standards` command verifies:
 - [ ] Import organization
 - [ ] Test file coverage
 
+## Code Review Workflow
+
+**IMPORTANT: All issues require resolution before PR merge.**
+
+When performing a code review:
+
+1. **Identify ALL issues** - Critical, medium, and low severity
+2. **Create Linear issues for EVERY finding** - No filtering by severity
+   - Create as sub-issues under the parent feature/task
+   - Use format: `[Code Review] <description>`
+3. **Resolve ALL issues before merge** - No exceptions for "low priority"
+4. **Re-review after fixes** - Verify each fix addresses the issue
+
+### Issue Creation Template
+
+```
+Title: [Code Review] <brief description>
+Description:
+- File: <path>
+- Line: <number>
+- Issue: <what's wrong>
+- Fix: <suggested resolution>
+- Standard: §<section> from standards.md
+```
+
+### Severity Guide (for documentation only, not for filtering)
+
+| Severity | Examples |
+|----------|----------|
+| Critical | Security vulnerabilities, data loss risks, breaking changes |
+| Medium | Missing tests, type safety issues, performance concerns |
+| Low | Style inconsistencies, documentation gaps, minor refactors |
+
+**All severities block PR merge until resolved.**
+
 ## When to Invoke
 
 This skill activates automatically during:
 
-1. **Code reviews** - Ensures changes meet standards
+1. **Code reviews** - Creates Linear issues for ALL findings
 2. **Pre-commit** - Reminds about checklist
 3. **Quality discussions** - References authoritative standards
 
