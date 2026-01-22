@@ -52,10 +52,62 @@ Queen vote counts as 3x weight, providing strategic guidance.
 **Byzantine Fault Tolerance**
 Requires 2/3 majority for decision approval, ensuring robust consensus even with faulty agents.
 
+## Prerequisites (REQUIRED for MCP Integration)
+
+### Claude-Flow MCP Server Configuration
+
+For MCP-based agent spawning (recommended), the claude-flow MCP server must be configured:
+
+**Option A - Via CLI:**
+```bash
+claude mcp add claude-flow -- npx claude-flow@alpha mcp start
+```
+
+**Option B - Via .mcp.json (recommended for projects):**
+```json
+{
+  "mcpServers": {
+    "claude-flow": {
+      "command": "npx",
+      "args": ["claude-flow@alpha", "mcp", "start"],
+      "env": {
+        "CLAUDE_FLOW_LOG_LEVEL": "info",
+        "CLAUDE_FLOW_MEMORY_BACKEND": "sqlite"
+      }
+    }
+  }
+}
+```
+
+**Verify configuration:**
+```bash
+claude mcp list | grep claude-flow
+```
+
+### MCP vs CLI Usage
+
+| Method | Command | When to Use |
+|--------|---------|-------------|
+| **MCP** | `mcp__claude-flow__swarm_init()` | Within Claude Code sessions (recommended) |
+| **CLI** | `npx claude-flow hive-mind init` | Terminal scripts, CI/CD, standalone |
+
+MCP provides tighter integration with Claude Code's agent system and enables proper specialist agent spawning.
+
 ## Getting Started
 
 ### 1. Initialize Hive Mind
 
+**Via MCP (within Claude Code):**
+```javascript
+mcp__claude-flow__swarm_init({
+  topology: "hierarchical",
+  maxAgents: 4,
+  queen_model: "sonnet",
+  worker_model: "haiku"
+})
+```
+
+**Via CLI (terminal):**
 ```bash
 # Basic initialization
 npx claude-flow hive-mind init

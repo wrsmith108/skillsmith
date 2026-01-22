@@ -15,6 +15,68 @@ Orchestrates complex task execution using claude-flow hive mind with automatic c
 - "orchestrate these tasks"
 - "parallel execution with review"
 
+## Prerequisites (REQUIRED)
+
+### 1. Claude-Flow MCP Server Must Be Configured
+
+The hive mind uses MCP tools (`mcp__claude-flow__*`) to spawn and coordinate agents. Without the MCP server, commands like `swarm_init` and `agent_spawn` will not work.
+
+**Check if configured:**
+```bash
+claude mcp list | grep claude-flow
+```
+
+**If not configured, add it:**
+
+Option A - Via CLI:
+```bash
+claude mcp add claude-flow -- npx claude-flow@alpha mcp start
+```
+
+Option B - Via .mcp.json (recommended for projects):
+Create `.mcp.json` in project root:
+```json
+{
+  "mcpServers": {
+    "claude-flow": {
+      "command": "npx",
+      "args": ["claude-flow@alpha", "mcp", "start"],
+      "env": {
+        "CLAUDE_FLOW_LOG_LEVEL": "info",
+        "CLAUDE_FLOW_MEMORY_BACKEND": "sqlite"
+      }
+    }
+  }
+}
+```
+
+**Verify MCP tools are available:**
+After configuration, these tools should be accessible:
+- `mcp__claude-flow__swarm_init` - Initialize swarm topology
+- `mcp__claude-flow__agent_spawn` - Spawn specialist agents
+- `mcp__claude-flow__task_orchestrate` - Coordinate tasks
+- `mcp__claude-flow__memory_usage` - Shared memory operations
+- `mcp__claude-flow__swarm_destroy` - Cleanup swarm
+
+### 2. Available Specialist Agents
+
+| Agent Type | Role | Specialization |
+|-----------|------|----------------|
+| `architect` | System design | API contracts, infrastructure, DDD |
+| `coder` | Implementation | Can specialize: backend, frontend, React, Astro, Rust |
+| `tester` | QA & Validation | Unit, integration, E2E, security tests |
+| `reviewer` | Code review | Security audit, best practices, performance |
+| `researcher` | Analysis | Codebase exploration, documentation |
+| `planner` | Coordination | Task decomposition, dependency mapping |
+
+### 3. Resource Constraints
+
+| Profile | Max Agents | Use Case |
+|---------|------------|----------|
+| `laptop` | 2 | M1/M4 MacBook development |
+| `workstation` | 4 | Desktop with more resources |
+| `server` | 8+ | CI/CD or cloud execution |
+
 ## Workflow Overview
 
 ```
