@@ -4,6 +4,7 @@
  *
  * SMI-1180: API Development - Wave 3
  * SMI-1613: Anti-scraping protection (min 3 chars, no wildcards)
+ * SMI-1660: API performance monitoring for filter-only queries
  *
  * Query Parameters:
  * - query (optional): Search term (min 3 chars if provided; if omitted, at least one filter required)
@@ -29,11 +30,18 @@ import {
 
 import {
   createSupabaseClient,
+  createSupabaseAdminClient,
   validatePagination,
   getRequestId,
   logInvocation,
   type SearchResult,
 } from '../_shared/supabase.ts'
+
+/**
+ * Query type classification for performance monitoring
+ * SMI-1660: API performance monitoring for filter-only queries
+ */
+type QueryType = 'filter-only' | 'fts' | 'combined'
 
 const VALID_TRUST_TIERS = ['verified', 'community', 'experimental', 'unknown'] as const
 
@@ -132,6 +140,10 @@ Deno.serve(async (req: Request) => {
     const supabase = createSupabaseClient(req.headers.get('authorization') ?? undefined)
 
     let results: SearchResult[] = []
+
+    // SMI-1660: Performance monitoring - classify query type and start timing
+    const queryType: QueryType = hasQuery && hasFilters ? 'combined' : hasQuery ? 'fts' : 'filter-only'
+    const queryStartTime = Date.now()
 
     if (hasQuery) {
       // Full-text search path: use search_skills RPC
@@ -249,6 +261,34 @@ Deno.serve(async (req: Request) => {
 
         results = filterResults || []
       }
+    }
+
+    // SMI-1660: Log performance metrics to audit_logs
+    const queryDurationMs = Date.now() - queryStartTime
+    try {
+      const adminClient = createSupabaseAdminClient()
+      await adminClient.from('audit_logs').insert({
+        event_type: 'search:metrics',
+        actor: 'system',
+        action: 'query',
+        result: 'success',
+        metadata: {
+          request_id: requestId,
+          query_type: queryType,
+          duration_ms: queryDurationMs,
+          result_count: results.length,
+          filters: {
+            category: category || null,
+            trust_tier: trustTier || null,
+            min_score: minScore ? Number(minScore) : null,
+          },
+          has_query: hasQuery,
+          timestamp: new Date().toISOString(),
+        },
+      })
+    } catch (metricsError) {
+      // Don't fail the request if metrics logging fails
+      console.error('Failed to log search metrics:', metricsError)
     }
 
     const response = jsonResponse({

@@ -135,6 +135,107 @@ const GITHUB_API_DELAY = 150 // ms between requests
 const DEFAULT_MIN_CONTENT_LENGTH = 100
 
 /**
+ * Category IDs matching the database schema
+ */
+const CATEGORY_IDS = {
+  security: 'cat-security',
+  testing: 'cat-testing',
+  devops: 'cat-devops',
+  documentation: 'cat-documentation',
+  productivity: 'cat-productivity',
+  development: 'cat-development',
+} as const
+
+/**
+ * SMI-1659: Categorization rules based on migration 016_populate_skill_categories.sql
+ * Determines which categories a skill belongs to based on tags and description
+ */
+function categorizeSkill(tags: string[], description?: string | null): string[] {
+  const categories: string[] = []
+  const tagsLower = tags.map((t) => t.toLowerCase())
+  const tagsText = tagsLower.join(' ')
+  const descLower = description?.toLowerCase() || ''
+
+  // Security: security, pentesting, vulnerability, audit, ctf, cybersecurity, hacking
+  const securityKeywords = [
+    'security',
+    'pentesting',
+    'vulnerability',
+    'audit',
+    'ctf',
+    'cybersecurity',
+    'hacking',
+  ]
+  if (
+    securityKeywords.some((kw) => tagsText.includes(kw)) ||
+    descLower.includes('security') ||
+    descLower.includes('pentesting')
+  ) {
+    categories.push(CATEGORY_IDS.security)
+  }
+
+  // Testing: testing, test, tdd, jest, vitest, e2e, playwright, cypress
+  const testingKeywords = ['testing', 'test', 'tdd', 'jest', 'vitest', 'e2e', 'playwright', 'cypress']
+  if (testingKeywords.some((kw) => tagsText.includes(kw) || tags.some((t) => t.toLowerCase() === kw))) {
+    categories.push(CATEGORY_IDS.testing)
+  }
+
+  // DevOps: devops, ci, cd, docker, kubernetes, deployment, infrastructure, container, github-actions
+  const devopsKeywords = [
+    'devops',
+    'ci',
+    'cd',
+    'docker',
+    'kubernetes',
+    'deployment',
+    'infrastructure',
+    'container',
+    'github-actions',
+    'workflow-automation',
+  ]
+  if (devopsKeywords.some((kw) => tagsText.includes(kw) || tags.some((t) => t.toLowerCase() === kw))) {
+    categories.push(CATEGORY_IDS.devops)
+  }
+
+  // Documentation: documentation, docs, readme, markdown, technical-writing
+  const docKeywords = ['documentation', 'docs', 'readme', 'markdown', 'technical-writing']
+  if (
+    docKeywords.some((kw) => tagsText.includes(kw) || tags.some((t) => t.toLowerCase() === kw)) ||
+    descLower.includes('documentation')
+  ) {
+    categories.push(CATEGORY_IDS.documentation)
+  }
+
+  // Productivity: productivity, automation, workflow, tools, cli, utility
+  const productivityKeywords = ['productivity', 'automation', 'workflow', 'tools', 'cli', 'utility']
+  if (productivityKeywords.some((kw) => tagsText.includes(kw) || tags.some((t) => t.toLowerCase() === kw))) {
+    categories.push(CATEGORY_IDS.productivity)
+  }
+
+  // Development: coding, agent, programming, framework, sdk, mcp-server, claude-code, vibe-coding, ai-coding
+  const devKeywords = [
+    'coding',
+    'agent',
+    'programming',
+    'framework',
+    'sdk',
+    'mcp-server',
+    'claude-code',
+    'vibe-coding',
+    'ai-coding',
+  ]
+  if (
+    devKeywords.some((kw) => tagsText.includes(kw) || tags.some((t) => t.toLowerCase() === kw)) ||
+    descLower.includes('coding agent') ||
+    descLower.includes('development')
+  ) {
+    categories.push(CATEGORY_IDS.development)
+  }
+
+  return categories
+}
+
+/**
  * Parse YAML frontmatter from markdown content
  * Returns null if no frontmatter is present
  */
@@ -887,6 +988,78 @@ Deno.serve(async (req: Request) => {
       }
       console.log(`[QualityScore] Inserts: ${result.indexed}, Updates: ${result.updated}`)
 
+      // SMI-1659: Categorize newly indexed skills
+      console.log(`[Categorization] Starting categorization for indexed skills...`)
+      let categorizedCount = 0
+      let categoryAssignments = 0
+
+      // Get all skill IDs and their tags that were just processed
+      const repoUrlsProcessed = repositories.map((r) => r.url)
+      const { data: skillsToCheck } = await supabase
+        .from('skills')
+        .select('id, tags, description')
+        .in('repo_url', repoUrlsProcessed)
+
+      if (skillsToCheck && skillsToCheck.length > 0) {
+        // Get skills that already have categories assigned
+        const skillIds = skillsToCheck.map((s) => s.id)
+        const { data: existingCategories } = await supabase
+          .from('skill_categories')
+          .select('skill_id')
+          .in('skill_id', skillIds)
+
+        const skillsWithCategories = new Set(existingCategories?.map((c) => c.skill_id) || [])
+
+        // Categorize skills that don't have categories yet
+        for (const skill of skillsToCheck) {
+          if (skillsWithCategories.has(skill.id)) {
+            continue // Skip skills that already have categories
+          }
+
+          const tags = Array.isArray(skill.tags) ? skill.tags : []
+          const categories = categorizeSkill(tags as string[], skill.description)
+
+          if (categories.length > 0) {
+            // Insert category assignments
+            const categoryRows = categories.map((categoryId) => ({
+              skill_id: skill.id,
+              category_id: categoryId,
+            }))
+
+            const { error: catError } = await supabase
+              .from('skill_categories')
+              .upsert(categoryRows, { onConflict: 'skill_id,category_id', ignoreDuplicates: true })
+
+            if (catError) {
+              console.log(`[Categorization] Error assigning categories for skill ${skill.id}: ${catError.message}`)
+            } else {
+              categorizedCount++
+              categoryAssignments += categories.length
+            }
+          }
+        }
+
+        // Update category skill_count for all categories
+        const { error: updateError } = await supabase.rpc('update_category_counts')
+        if (updateError) {
+          // Fallback: Update counts manually if RPC doesn't exist
+          console.log(`[Categorization] RPC update_category_counts not found, updating manually...`)
+          for (const categoryId of Object.values(CATEGORY_IDS)) {
+            const { count } = await supabase
+              .from('skill_categories')
+              .select('*', { count: 'exact', head: true })
+              .eq('category_id', categoryId)
+
+            await supabase
+              .from('categories')
+              .update({ skill_count: count || 0 })
+              .eq('id', categoryId)
+          }
+        }
+
+        console.log(`[Categorization] Categorized ${categorizedCount} skills with ${categoryAssignments} total category assignments`)
+      }
+
       // Log to audit_logs
       await supabase.from('audit_logs').insert({
         event_type: 'indexer:run',
@@ -904,6 +1077,10 @@ Deno.serve(async (req: Request) => {
           score_distribution: {
             high_trust: scoreDistribution.highTrust,
             community: scoreDistribution.community,
+          },
+          categorization: {
+            skills_categorized: categorizedCount,
+            category_assignments: categoryAssignments,
           },
         },
       })
