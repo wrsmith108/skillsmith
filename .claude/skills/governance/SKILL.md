@@ -29,8 +29,20 @@ Before every commit, run these in Docker:
 ```bash
 docker exec skillsmith-dev-1 npm run typecheck
 docker exec skillsmith-dev-1 npm run lint
+docker exec skillsmith-dev-1 npm run format:check  # Catch formatting before CI
 docker exec skillsmith-dev-1 npm test
 docker exec skillsmith-dev-1 npm run audit:standards
+```
+
+### Pre-Push Verification
+
+Before pushing, verify no source files are missing from commits:
+
+```bash
+# Check for untracked source files (common CI failure cause)
+git status --short | grep "^??" | grep -E "packages/.*/src/"
+
+# If any appear, they likely need to be staged and committed!
 ```
 
 For the complete wave completion checklist, see [docs/process/wave-completion-checklist.md](../../../docs/process/wave-completion-checklist.md).
@@ -50,6 +62,30 @@ For the complete wave completion checklist, see [docs/process/wave-completion-ch
 - **500 line limit** - Split larger files
 - **JSDoc for public APIs**
 - **Co-locate tests** (`*.test.ts`)
+
+### Type Safety Patterns (Code Review Focus)
+
+Common type errors to catch during review:
+
+| Pattern | Issue | Fix |
+|---------|-------|-----|
+| `null` vs `undefined` | Return type mismatch | Use consistent nullish type |
+| `as any` cast | Type safety bypass | Use proper generic or type guard |
+| Missing `\| undefined` | Optional field not typed | Add to type definition |
+
+**Example fix for null/undefined mismatch:**
+```typescript
+// BAD: cache is null but return type is undefined
+let cache: Data | null = null
+function get(): Data | undefined { return cache }  // TS2322!
+
+// GOOD: Use Symbol for uninitialized state
+const NOT_LOADED = Symbol('not-loaded')
+let cache: Data | undefined | typeof NOT_LOADED = NOT_LOADED
+function get(): Data | undefined {
+  return cache === NOT_LOADED ? undefined : cache
+}
+```
 
 ### Testing (§2)
 
@@ -166,6 +202,17 @@ For complete policy details, see [docs/architecture/standards.md](../../../docs/
 | [Exploration Phase Template](../../../docs/process/exploration-phase-template.md) | Discover existing code before implementing |
 | [Linear Hygiene Guide](../../../docs/process/linear-hygiene-guide.md) | Prevent duplicate issues |
 | [Infrastructure Inventory](../../../docs/architecture/infrastructure-inventory.md) | What exists in the codebase |
+
+## Common CI Failures
+
+Patterns that pass locally but fail in CI:
+
+| Failure | Root Cause | Prevention |
+|---------|------------|------------|
+| `Cannot find module './foo.types.js'` | New files created but not committed | Run `git status` before push |
+| Prettier formatting errors | Formatting not run locally | Add `format:check` to pre-commit |
+| `TS2322: Type 'null' not assignable` | null vs undefined mismatch | Use consistent nullish types |
+| Native module errors | Missing rebuild after install | Run `npm rebuild` in Docker |
 
 ## Git Hooks
 
