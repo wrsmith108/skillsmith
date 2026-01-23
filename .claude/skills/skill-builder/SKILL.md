@@ -420,28 +420,71 @@ For complex scenarios like HOCs, render props, or custom hooks, see [ADVANCED.md
 **Location**: `scripts/` in skill directory
 **Usage**: Referenced from SKILL.md
 
-Example:
+##### When to Extract to Scripts
+
+**Extract deterministic operations** to `scripts/` when:
+
+| Criteria | Example | Why |
+|----------|---------|-----|
+| **Repeatable command sequences** | Setup, validation, deployment | Eliminates manual command entry errors |
+| **Complex GraphQL/API calls** | Linear issue updates, Supabase queries | Proper escaping, error handling |
+| **Multi-step workflows** | Build → test → deploy | Ensures consistent execution order |
+| **Operations needing proper types** | SDK operations with type hints | IDE support, compile-time checks |
+
+**Keep inline** when:
+- One-liner commands
+- Ad-hoc exploration
+- Commands requiring interactive input
+
+##### Reference Implementation: Linear Skill
+
+The linear skill demonstrates the scripts pattern:
+
 ```bash
-# In skill directory
-scripts/
-├── setup.sh          # Initialization script
-├── validate.js       # Validation logic
-├── generate.py       # Code generation
-└── deploy.sh         # Deployment script
+~/.claude/skills/linear/
+├── SKILL.md                    # Main skill (<500 lines)
+├── scripts/
+│   ├── linear-ops.ts           # High-level operations
+│   ├── linear-api.mjs          # Direct GraphQL wrapper
+│   ├── linear-helpers.mjs      # Bulk update helpers
+│   ├── query.ts                # Ad-hoc GraphQL queries
+│   ├── setup.ts                # Setup verification
+│   └── sync.ts                 # Bulk sync operations
+└── ...
+```
+
+**Key patterns:**
+1. **Operations script** (`linear-ops.ts`) - User-friendly CLI for common tasks
+2. **API wrapper** (`linear-api.mjs`) - Handles JSON escaping, error handling
+3. **Helpers** (`linear-helpers.mjs`) - Bulk operations, batch updates
+4. **Query runner** (`query.ts`) - Ad-hoc GraphQL for exploration
+
+##### Script Design Guidelines
+
+```bash
+# Good: Self-documenting with help
+npx tsx scripts/linear-ops.ts help
+npx tsx scripts/linear-ops.ts create-issue --help
+
+# Good: Accepts arguments, provides feedback
+npx tsx scripts/linear-ops.ts status Done SMI-123 SMI-124
+# Output: ✅ Updated SMI-123 to Done
+#         ✅ Updated SMI-124 to Done
+
+# Bad: No feedback, silent failures
+./scripts/update.sh  # Did it work? Who knows.
 ```
 
 Reference from SKILL.md:
 ```markdown
-## Setup
-Run the setup script:
+## Quick Operations
 ```bash
-./scripts/setup.sh
-```
+# Use the operations script
+npx tsx scripts/linear-ops.ts create-issue "Project" "Title"
+npx tsx scripts/linear-ops.ts status Done SMI-123
 
-## Validation
-Validate your configuration:
-```bash
-node scripts/validate.js config.json
+# Show all commands
+npx tsx scripts/linear-ops.ts help
 ```
 ```
 
