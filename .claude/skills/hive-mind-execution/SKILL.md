@@ -296,7 +296,33 @@ Edit("file.ts", old_string, new_string)
 Bash("npm run typecheck && npm run lint")
 ```
 
-### 5.1 Run Governance Audit
+### 5.1 Create Linear Issues for Non-Blocking Findings (SMI-1726)
+
+**MANDATORY**: Per governance policy, ALL findings must either be fixed OR tracked in Linear.
+
+For medium/low findings that weren't fixed immediately:
+
+```javascript
+// Create Linear issues for non-blocking findings
+// Uses: node ~/.claude/skills/linear/scripts/linear-api.mjs create-issue
+
+// For each non-blocking finding from code review:
+Bash(`node ~/.claude/skills/linear/scripts/linear-api.mjs create-issue \
+  --team SMI \
+  --title "[Code Review] ${finding.title}" \
+  --description "## Code Review Finding\n\n**Severity**: ${finding.severity}\n**Category**: ${finding.category}\n**File**: ${finding.file}\n\n### Description\n${finding.description}\n\n### Suggested Fix\n${finding.suggestedFix}" \
+  --priority ${finding.severity === 'medium' ? 3 : 4}`)
+```
+
+**Policy**: "Every issue gets either a fix or a Linear ticket. No exceptions."
+
+| Severity | Action Required |
+|----------|-----------------|
+| Critical/High | Fix immediately (blocking) |
+| Medium | Fix OR create Linear issue |
+| Low | Fix OR create Linear issue |
+
+### 5.2 Run Governance Audit
 
 After addressing review findings, run the governance audit:
 

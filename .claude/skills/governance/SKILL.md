@@ -162,15 +162,25 @@ Description:
 - Standard: §<section> from standards.md
 ```
 
-### Severity Guide
+### Severity Guide (SMI-1726)
 
 | Severity | Action | Examples |
 |----------|--------|----------|
-| Critical | Fix before merge | Security vulnerabilities, data loss risks |
-| Major | Fix OR create issue before merge | Missing tests, type safety issues |
-| Minor | Fix OR create issue before merge | Style inconsistencies, minor refactors |
+| Critical | Fix before merge (blocking) | Security vulnerabilities, data loss risks |
+| High | Fix before merge (blocking) | Missing tests, type safety issues |
+| Medium | **Fix OR create Linear issue** | Architecture issues, style problems |
+| Low | **Fix OR create Linear issue** | Minor refactors, documentation gaps |
 
-**Every issue gets either a fix or a Linear ticket. No exceptions.**
+**🚨 MANDATORY: Every finding gets either a fix or a Linear ticket. No exceptions.**
+
+```bash
+# Create Linear issue for non-blocking finding
+node ~/.claude/skills/linear/scripts/linear-api.mjs create-issue \
+  --team SMI \
+  --title "[Code Review] Finding title" \
+  --description "Details..." \
+  --priority 3  # 3=medium, 4=low
+```
 
 ### Code Review Completion Checklist
 
