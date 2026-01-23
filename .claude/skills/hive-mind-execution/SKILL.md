@@ -585,6 +585,36 @@ echo "✅ Ready for code review"
 
 See [GitHub Code Review Skill](../github-code-review/SKILL.md) for detailed review patterns.
 
+## Domain-Specific Checklists
+
+### Auth Pages (Astro/Supabase)
+
+When modifying authentication pages (`login.astro`, `signup.astro`, `account/*.astro`, `auth/callback.astro`):
+
+| Check | Requirement | Why |
+|-------|-------------|-----|
+| SSR Directive | `export const prerender = false` | Pages reading URL params/cookies MUST be SSR |
+| Config Import | `import { getSupabaseConfig } from '@/lib/supabase-config'` | Shared config prevents drift |
+| Window Pattern | Use `window.__SUPABASE_CONFIG__` | Type-safe, no hidden div hacks |
+| Type Safety | No `as any` casts for config | Use `SupabaseWindowConfig` interface |
+
+**Quick Verification**:
+```bash
+# Check all auth pages have SSR directive
+grep -L "prerender = false" packages/website/src/pages/{login,signup}.astro packages/website/src/pages/account/*.astro packages/website/src/pages/auth/*.astro 2>/dev/null
+
+# Check for hidden div anti-pattern (should return nothing)
+grep -r 'id=".*config".*data-' packages/website/src/pages/
+```
+
+**Anti-patterns to Flag**:
+- `<div id="config" data-foo={value} style="display:none">` → Use window config
+- `const config = (window as any).__CONFIG__` → Use typed interface
+- Direct `import.meta.env` in client scripts → Pass via SSR head script
+- Missing `prerender = false` on pages using `Astro.url.searchParams`
+
+**Reference**: [SMI-1706 through SMI-1710](https://linear.app/smith-horn-group/issue/SMI-1706) - Auth page standardization
+
 ## Configuration
 
 ### Environment Variables
