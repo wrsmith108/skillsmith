@@ -615,6 +615,37 @@ grep -r 'id=".*config".*data-' packages/website/src/pages/
 
 **Reference**: [SMI-1706 through SMI-1710](https://linear.app/smith-horn-group/issue/SMI-1706) - Auth page standardization
 
+### Payment Pages (Stripe Integration)
+
+When modifying payment-related pages (`signup.astro`, `pricing.astro`, checkout functions):
+
+| Check | Requirement | Why |
+|-------|-------------|-----|
+| E2E Tests | Run `npx vitest run tests/e2e/checkout-flow.spec.ts --config vitest.e2e.config.ts` | Verify all tiers work |
+| Tier Param | `/signup?tier=team` shows correct tier | SSR must read URL params |
+| Pricing Match | CTAs match `packages/website/src/lib/pricing.ts` | Single source of truth |
+| API Params | Use `period` not `billingPeriod`, endpoint is `/checkout` | Actual API contract |
+
+**Pre-Deployment Verification:**
+```bash
+# Quick API test
+curl -s -X POST 'https://vrcnzpmndtroqxxoqkzy.supabase.co/functions/v1/checkout' \
+  -H 'Content-Type: application/json' \
+  -d '{"tier":"individual","period":"monthly"}' | jq '.sessionId'
+
+# E2E tests (requires vitest.e2e.config.ts)
+docker exec skillsmith-dev-1 npx vitest run tests/e2e/checkout-flow.spec.ts --config vitest.e2e.config.ts
+```
+
+**Test Cards:**
+| Card | Result |
+|------|--------|
+| `4242424242424242` | Success |
+| `4000000000000002` | Declined |
+| `4000002500003155` | 3D Secure required |
+
+**Reference**: [Stripe Testing Guide](../../../docs/development/stripe-testing.md)
+
 ## Configuration
 
 ### Environment Variables
