@@ -203,4 +203,4 @@ The skill includes helper scripts in `scripts/`:
 **Created**: December 2025
 **Updated**: January 2026
 **Scope**: Internal - Smith-Horn/skillsmith repository
-**Related**: [wave-planner](~/.claude/skills/wave-planner/SKILL.md), [hive-mind](.claude/skills/hive-mind/SKILL.md)
+**Related**: [wave-planner](~/.claude/skills/wave-planner/SKILL.md), [hive-mind](../hive-mind/SKILL.md)

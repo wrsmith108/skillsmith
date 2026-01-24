@@ -227,7 +227,7 @@ mcp__claude-flow__memory_usage { action: "store", key: "...", value: "..." }
 
 ---
 
-**Remember**: **SPARC = Systematic, Parallel, Agile, Refined, Complete**
+**Remember**: **SPARC = Specification, Pseudocode, Architecture, Refinement, Completion**
 
 ---
 

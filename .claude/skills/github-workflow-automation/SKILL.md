@@ -66,8 +66,8 @@ gh run view <run-id> --json jobs,conclusion | \
 
 ## Sub-Documentation
 
-| Document | Description |
-|----------|-------------|
+| Document | Contents |
+|----------|----------|
 | [modes.md](./modes.md) | 8 GitHub integration modes (coordinator, pr-manager, etc.) |
 | [templates.md](./templates.md) | Production-ready workflow templates |
 | [advanced.md](./advanced.md) | Dynamic testing, predictive analysis, custom actions |
