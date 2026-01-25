@@ -1,5 +1,5 @@
 -- Migration: 021_skills_optimized.sql
--- Issue: SMI-XXX (Skillsmith Optimization Layer)
+-- Issue: SMI-1788 (Skillsmith Optimization Layer)
 -- Description: Add table for caching optimized skill versions with TTL-based
 --              expiry, version tracking, and popularity signals for the hybrid
 --              optimization approach.
@@ -140,7 +140,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql STABLE;
 
-COMMENT ON FUNCTION get_optimized_skill IS 'Get cached optimized skill if valid (not expired, correct version)';
+COMMENT ON FUNCTION get_optimized_skill IS 'Get cached optimized skill if not expired and version matches. Note: Content hash validation is performed at application layer.';
 
 -- ============================================================================
 -- Step 5: Create function to upsert optimized skill
