@@ -1,6 +1,15 @@
 ---
 name: Pair Programming
+version: "1.0.0"
 description: AI-assisted pair programming with multiple modes (driver/navigator/switch), real-time verification, quality monitoring, and comprehensive testing. Supports TDD, debugging, refactoring, and learning sessions. Features automatic role switching, continuous code review, security scanning, and performance optimization with truth-score verification.
+category: development
+tags:
+  - pair-programming
+  - collaboration
+  - tdd
+  - code-review
+  - quality
+author: Smith Horn
 ---
 
 # Pair Programming

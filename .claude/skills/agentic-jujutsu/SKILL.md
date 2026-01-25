@@ -2,6 +2,14 @@
 name: agentic-jujutsu
 version: 2.3.2
 description: Quantum-resistant, self-learning version control for AI agents with ReasoningBank intelligence and multi-agent coordination
+category: development
+tags:
+  - version-control
+  - multi-agent
+  - ai-agents
+  - conflict-resolution
+  - quantum-resistant
+author: Smith Horn
 ---
 
 # Agentic Jujutsu - AI Agent Version Control

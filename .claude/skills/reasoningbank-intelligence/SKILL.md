@@ -1,6 +1,15 @@
 ---
 name: "ReasoningBank Intelligence"
+version: "1.0.0"
 description: "Implement adaptive learning with ReasoningBank for pattern recognition, strategy optimization, and continuous improvement. Use when building self-learning agents, optimizing workflows, or implementing meta-cognitive systems."
+category: ai-ml
+tags:
+  - reasoningbank
+  - adaptive-learning
+  - pattern-recognition
+  - meta-cognition
+  - self-learning
+author: Smith Horn
 ---
 
 # ReasoningBank Intelligence

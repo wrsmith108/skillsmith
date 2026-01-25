@@ -1,6 +1,15 @@
 ---
 name: "AgentDB Memory Patterns"
+version: "1.0.0"
 description: "Implement persistent memory patterns for AI agents using AgentDB. Includes session memory, long-term storage, pattern learning, and context management. Use when building stateful agents, chat systems, or intelligent assistants."
+category: ai-ml
+tags:
+  - agentdb
+  - memory
+  - persistence
+  - ai-agents
+  - context-management
+author: Smith Horn
 ---
 
 # AgentDB Memory Patterns

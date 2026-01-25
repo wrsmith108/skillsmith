@@ -1,6 +1,15 @@
 ---
 name: "Hive Mind Execution"
+version: "1.0.0"
 description: "Execute Linear issues or tasks using hive mind orchestration with parallel agents, code review, and documentation updates. Use for phase execution, epic completion, or complex multi-task work."
+category: orchestration
+tags:
+  - hive-mind
+  - orchestration
+  - linear
+  - parallel-execution
+  - multi-agent
+author: Smith Horn
 ---
 
 # Hive Mind Execution Skill

@@ -1,6 +1,15 @@
 ---
 name: "AgentDB Learning Plugins"
+version: "1.0.0"
 description: "Create and train AI learning plugins with AgentDB's 9 reinforcement learning algorithms. Includes Decision Transformer, Q-Learning, SARSA, Actor-Critic, and more. Use when building self-learning agents, implementing RL, or optimizing agent behavior through experience."
+category: ai-ml
+tags:
+  - agentdb
+  - reinforcement-learning
+  - machine-learning
+  - ai-training
+  - plugins
+author: Smith Horn
 ---
 
 # AgentDB Learning Plugins

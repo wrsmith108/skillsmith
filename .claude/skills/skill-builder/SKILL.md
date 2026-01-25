@@ -1,6 +1,15 @@
 ---
 name: "Skill Builder"
+version: "1.0.0"
 description: "Create new Claude Code Skills with proper YAML frontmatter, progressive disclosure structure, and complete directory organization. Use when you need to build custom skills for specific workflows, generate skill templates, or understand the Claude Skills specification."
+category: development
+tags:
+  - skill-authoring
+  - templates
+  - yaml
+  - claude-code
+  - scaffolding
+author: Smith Horn
 ---
 
 # Skill Builder

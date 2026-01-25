@@ -2,6 +2,14 @@
 name: "Worktree Manager"
 version: 1.1.0
 description: "Manage git worktrees for parallel development with conflict prevention and wave-aware execution strategy. Use when creating feature branches, starting parallel work sessions, merging worktree PRs, or coordinating multiple Claude sessions. Includes dependency analysis for choosing single vs. multiple worktree patterns."
+category: development
+tags:
+  - git
+  - worktree
+  - parallel-development
+  - branching
+  - workflow
+author: Smith Horn
 triggers:
   keywords:
     - create worktree

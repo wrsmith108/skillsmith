@@ -1,6 +1,15 @@
 ---
 name: "AgentDB Vector Search"
+version: "1.0.0"
 description: "Implement semantic vector search with AgentDB for intelligent document retrieval, similarity matching, and context-aware querying. Use when building RAG systems, semantic search engines, or intelligent knowledge bases."
+category: ai-ml
+tags:
+  - agentdb
+  - vector-search
+  - semantic-search
+  - rag
+  - embeddings
+author: Smith Horn
 ---
 
 # AgentDB Vector Search

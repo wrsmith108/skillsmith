@@ -1,6 +1,15 @@
 ---
 name: "git-crypt"
+version: "1.0.0"
 description: "Manage git-crypt encrypted repositories with seamless worktree support. Handles unlock/lock operations, key management, and the critical worktree smudge filter issue that causes encrypted file checkout failures."
+category: security
+tags:
+  - git
+  - encryption
+  - security
+  - worktree
+  - secrets
+author: Smith Horn
 ---
 
 # git-crypt
