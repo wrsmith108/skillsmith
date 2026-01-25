@@ -2,6 +2,14 @@
 name: "Governance"
 version: "1.2.0"
 description: "Enforces engineering standards and code quality policies. Use during code reviews, before commits, when discussing standards or compliance, and for quality audits."
+category: development
+tags:
+  - governance
+  - code-review
+  - standards
+  - compliance
+  - quality
+author: Smith Horn
 triggers:
   keywords:
     - code review
