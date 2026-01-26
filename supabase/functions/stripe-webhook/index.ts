@@ -48,7 +48,8 @@ Deno.serve(async (req: Request) => {
 
   let event: Stripe.Event
   try {
-    event = stripe.webhooks.constructEvent(body, signature, STRIPE_WEBHOOK_SECRET)
+    // Use constructEventAsync for Deno/Edge runtime (uses Web Crypto API)
+    event = await stripe.webhooks.constructEventAsync(body, signature, STRIPE_WEBHOOK_SECRET)
   } catch (err) {
     console.error('Webhook signature verification failed:', err)
     return new Response('Invalid signature', { status: 400 })
@@ -329,22 +330,20 @@ Deno.serve(async (req: Request) => {
         })
 
         // Log to audit_logs for billing history (if table exists)
-        await supabase
-          .from('audit_logs')
-          .insert({
-            action: 'payment_succeeded',
-            resource_type: 'invoice',
-            resource_id: invoice.id,
-            metadata: {
-              subscription_id: invoice.subscription,
-              amount: invoice.amount_paid,
-              currency: invoice.currency,
-            },
-          })
-          .catch((err) => {
-            // Log but don't fail - table may not exist in all environments
-            console.debug('Audit log insert skipped:', err.message || 'table may not exist')
-          })
+        const { error: auditError } = await supabase.from('audit_logs').insert({
+          action: 'payment_succeeded',
+          resource_type: 'invoice',
+          resource_id: invoice.id,
+          metadata: {
+            subscription_id: invoice.subscription,
+            amount: invoice.amount_paid,
+            currency: invoice.currency,
+          },
+        })
+        if (auditError) {
+          // Log but don't fail - table may not exist in all environments
+          console.debug('Audit log insert skipped:', auditError.message || 'table may not exist')
+        }
 
         break
       }
@@ -366,21 +365,19 @@ Deno.serve(async (req: Request) => {
         }
 
         // Log to audit_logs (if table exists)
-        await supabase
-          .from('audit_logs')
-          .insert({
-            action: 'payment_failed',
-            resource_type: 'invoice',
-            resource_id: invoice.id,
-            metadata: {
-              subscription_id: invoice.subscription,
-              attempt_count: invoice.attempt_count,
-            },
-          })
-          .catch((err) => {
-            // Log but don't fail - table may not exist in all environments
-            console.debug('Audit log insert skipped:', err.message || 'table may not exist')
-          })
+        const { error: auditError2 } = await supabase.from('audit_logs').insert({
+          action: 'payment_failed',
+          resource_type: 'invoice',
+          resource_id: invoice.id,
+          metadata: {
+            subscription_id: invoice.subscription,
+            attempt_count: invoice.attempt_count,
+          },
+        })
+        if (auditError2) {
+          // Log but don't fail - table may not exist in all environments
+          console.debug('Audit log insert skipped:', auditError2.message || 'table may not exist')
+        }
 
         // Send payment failed notification email
         const customerEmail = invoice.customer_email
@@ -405,10 +402,15 @@ Deno.serve(async (req: Request) => {
       headers: { 'Content-Type': 'application/json' },
     })
   } catch (error) {
-    console.error('Webhook processing error:', error)
-    return new Response(JSON.stringify({ error: 'Webhook processing failed' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    })
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    const errorStack = error instanceof Error ? error.stack : undefined
+    console.error('Webhook processing error:', { message: errorMessage, stack: errorStack })
+    return new Response(
+      JSON.stringify({ error: 'Webhook processing failed', details: errorMessage }),
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    )
   }
 })
