@@ -14,8 +14,22 @@ import { errorResponse } from './cors.ts'
 /** Trial limit: 10 requests TOTAL (not per day) */
 const TRIAL_LIMIT = 10
 
-/** Salt for IP hashing (use env var in production) */
-const TRIAL_SALT = Deno.env.get('TRIAL_SALT') || 'skillsmith-trial-2026'
+/** Default salt value (used when TRIAL_SALT env var is not set) */
+const DEFAULT_TRIAL_SALT = 'skillsmith-trial-2026'
+
+/**
+ * Salt for IP hashing
+ * SMI-56: Log warning when falling back to default salt
+ */
+const TRIAL_SALT =
+  Deno.env.get('TRIAL_SALT') ||
+  (() => {
+    console.warn(
+      '[trial-limiter] TRIAL_SALT environment variable not set, using default. ' +
+        'Set TRIAL_SALT in production for improved security.'
+    )
+    return DEFAULT_TRIAL_SALT
+  })()
 
 /**
  * Trial check result
