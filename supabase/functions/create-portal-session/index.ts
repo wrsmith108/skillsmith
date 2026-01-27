@@ -88,11 +88,16 @@ Deno.serve(async (req: Request) => {
       .single()
 
     if (subError || !subscription?.stripe_customer_id) {
-      console.error('Subscription lookup error:', subError)
+      console.error('Subscription lookup error:', {
+        error: subError?.message,
+        hasSubscription: !!subscription,
+        hasCustomerId: !!subscription?.stripe_customer_id,
+        userId: user.id,
+      })
       return errorResponse(
-        'No active subscription found. You must have an active subscription to access the billing portal.',
+        'No billing account found. Please subscribe to a paid plan to access the billing portal.',
         404,
-        undefined,
+        { code: 'no_subscription' },
         origin
       )
     }
@@ -145,6 +150,38 @@ Deno.serve(async (req: Request) => {
 
     // Handle Stripe errors specifically
     if (error instanceof Stripe.errors.StripeError) {
+      // Handle "No such customer" error (customer was deleted in Stripe)
+      if (error.code === 'resource_missing' || error.message?.includes('No such customer')) {
+        console.error('Stripe customer not found:', {
+          code: error.code,
+          message: error.message,
+        })
+        return errorResponse(
+          'Your billing account could not be found. This may happen if your subscription was cancelled directly in Stripe. Please contact support for assistance.',
+          404,
+          { code: 'customer_not_found', type: error.type },
+          origin
+        )
+      }
+
+      // Handle billing portal configuration errors
+      if (
+        error.message?.includes('portal configuration') ||
+        error.code === 'portal_configuration_invalid'
+      ) {
+        console.error('Billing portal configuration error:', {
+          code: error.code,
+          message: error.message,
+        })
+        return errorResponse(
+          'The billing portal is not properly configured. Please contact support.',
+          503,
+          { code: 'portal_not_configured', type: error.type },
+          origin
+        )
+      }
+
+      // Generic Stripe error
       return errorResponse(
         error.message,
         error.statusCode || 500,
