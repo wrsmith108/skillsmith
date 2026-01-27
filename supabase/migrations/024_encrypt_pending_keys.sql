@@ -8,6 +8,50 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- ============================================================================
+-- SECRETS TABLE: Store encryption keys securely (service_role only)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS app_secrets (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+COMMENT ON TABLE app_secrets IS 'Secure storage for application secrets (service_role access only)';
+
+-- Enable RLS - only service_role can access
+ALTER TABLE app_secrets ENABLE ROW LEVEL SECURITY;
+
+-- No policies for anon/authenticated - only service_role bypasses RLS
+-- This means the table is completely locked down except for service_role
+
+-- Insert the pending key encryption secret (auto-generated)
+INSERT INTO app_secrets (key, value)
+VALUES ('pending_key_secret', encode(gen_random_bytes(32), 'hex'))
+ON CONFLICT (key) DO NOTHING;
+
+-- ============================================================================
+-- HELPER FUNCTION: Get secret value (SECURITY DEFINER to access table)
+-- ============================================================================
+CREATE OR REPLACE FUNCTION get_app_secret(secret_key TEXT)
+RETURNS TEXT
+LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  secret_value TEXT;
+BEGIN
+  SELECT value INTO secret_value
+  FROM app_secrets
+  WHERE key = secret_key;
+
+  RETURN secret_value;
+END;
+$$;
+
+-- Only service_role can execute this function
+REVOKE EXECUTE ON FUNCTION get_app_secret FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION get_app_secret TO service_role;
+
+-- ============================================================================
 -- COLUMN CHANGES: encrypted_key -> payload (BYTEA for encrypted storage)
 -- ============================================================================
 
@@ -83,17 +127,15 @@ BEGIN
     )
   );
 
-  -- Get encryption key from database setting
-  -- Must be set via: ALTER DATABASE postgres SET app.pending_key_secret = 'your-secret';
-  -- Or via Supabase Dashboard > Database > Extensions > Database Settings
-  encryption_key := current_setting('app.pending_key_secret', true);
+  -- Get encryption key from app_secrets table
+  SELECT value INTO encryption_key
+  FROM app_secrets
+  WHERE key = 'pending_key_secret';
 
-  -- Fallback to a derived key if setting not configured (not recommended for production)
+  -- Fallback to a derived key if secret not found (shouldn't happen after migration)
   IF encryption_key IS NULL OR encryption_key = '' THEN
-    -- Use a combination of user_id and a static component as fallback
-    -- This is less secure but ensures functionality during development
     encryption_key := encode(sha256(('skillsmith-pending-key-' || user_id_input::text)::bytea), 'hex');
-    RAISE WARNING 'app.pending_key_secret not set - using derived key. Set in production!';
+    RAISE WARNING 'pending_key_secret not in app_secrets - using derived key';
   END IF;
 
   -- Store encrypted key for one-time display
@@ -141,8 +183,10 @@ BEGIN
     RETURN NULL;
   END IF;
 
-  -- Get encryption key
-  encryption_key := current_setting('app.pending_key_secret', true);
+  -- Get encryption key from app_secrets table (via SECURITY DEFINER context)
+  SELECT value INTO encryption_key
+  FROM app_secrets
+  WHERE key = 'pending_key_secret';
 
   IF encryption_key IS NULL OR encryption_key = '' THEN
     -- Use same fallback derivation as encrypt function
@@ -177,11 +221,13 @@ DECLARE
   encryption_key TEXT;
   global_key TEXT;
 BEGIN
-  -- Get global encryption key (if set)
-  global_key := current_setting('app.pending_key_secret', true);
+  -- Get global encryption key from app_secrets table
+  SELECT value INTO global_key
+  FROM app_secrets
+  WHERE key = 'pending_key_secret';
 
   IF global_key IS NULL OR global_key = '' THEN
-    RAISE NOTICE 'app.pending_key_secret not set - using derived keys for migration';
+    RAISE NOTICE 'pending_key_secret not in app_secrets - using derived keys for migration';
   END IF;
 
   -- Migrate from old TEXT column (encrypted_key) to new BYTEA column (payload)
