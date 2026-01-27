@@ -28,6 +28,9 @@ import {
   rateLimitExceededResponse,
 } from '../_shared/rate-limiter.ts'
 
+import { authenticateRequest, type AuthResult } from '../_shared/api-key-auth.ts'
+import { checkTrialLimit, trialExceededResponse } from '../_shared/trial-limiter.ts'
+
 import {
   createSupabaseClient,
   createSupabaseAdminClient,
@@ -59,6 +62,19 @@ Deno.serve(async (req: Request) => {
   const requestId = getRequestId(req.headers)
   const origin = req.headers.get('origin')
   logInvocation('skills-search', requestId)
+
+  // Check for API key authentication first
+  const authResult: AuthResult = await authenticateRequest(req)
+
+  // If not authenticated, check trial limit
+  let trialRemaining: number | undefined
+  if (!authResult.authenticated) {
+    const trialResult = await checkTrialLimit(req)
+    if (!trialResult.allowed) {
+      return trialExceededResponse(trialResult, origin)
+    }
+    trialRemaining = trialResult.remaining
+  }
 
   // Check rate limit
   const rateLimitResult = await checkRateLimit('skills-search', req)
@@ -316,6 +332,14 @@ Deno.serve(async (req: Request) => {
       headers.set(key, value)
     })
     headers.set('X-Request-ID', requestId)
+
+    // Add auth-related headers
+    if (authResult.authenticated) {
+      headers.set('X-Authenticated', 'true')
+      headers.set('X-Tier', authResult.tier || 'community')
+    } else if (trialRemaining !== undefined) {
+      headers.set('X-Trial-Remaining', String(trialRemaining))
+    }
 
     return new Response(response.body, {
       status: response.status,

@@ -153,6 +153,32 @@ export function getClientIdentifier(req: Request): string {
 }
 
 /**
+ * Get authenticated client identifier
+ * Returns API key prefix for authenticated users, IP for anonymous
+ * SMI-XXXX: Auth-aware rate limiting
+ *
+ * @param req - Request object
+ * @param keyPrefix - API key prefix if authenticated (from AuthResult)
+ * @returns Object with identifier and auth status
+ */
+export function getAuthenticatedClientIdentifier(
+  req: Request,
+  keyPrefix?: string
+): { identifier: string; isAuthenticated: boolean } {
+  if (keyPrefix) {
+    return {
+      identifier: `apikey:${keyPrefix}`,
+      isAuthenticated: true,
+    }
+  }
+
+  return {
+    identifier: getClientIdentifier(req),
+    isAuthenticated: false,
+  }
+}
+
+/**
  * Simple string hash function
  */
 function hashString(str: string): string {
