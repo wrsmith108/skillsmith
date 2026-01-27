@@ -1,6 +1,6 @@
 ---
 name: "Governance"
-version: "1.2.0"
+version: "1.3.0"
 description: "Enforces engineering standards and code quality policies. Use during code reviews, before commits, when discussing standards or compliance, and for quality audits."
 category: development
 tags:
@@ -22,10 +22,15 @@ triggers:
     - best practices
     - retro
     - retrospective
+    - test edge function
+    - edge function test
+    - mock Deno
+    - Deno is not defined
   explicit:
     - /governance
     - /review
     - /retro
+    - /edge-test
 composes:
   - linear
 ---
@@ -52,7 +57,7 @@ Enforces engineering standards from [standards.md](../../../docs/architecture/st
 
 See frontmatter `triggers` block for keyword and explicit command triggers.
 
-**Explicit Commands**: `/governance`, `/review`, `/retro`
+**Explicit Commands**: `/governance`, `/review`, `/retro`, `/edge-test`
 
 ## Quick Audit
 
@@ -282,6 +287,7 @@ When running a retrospective ("retro"), **MUST produce a written report** saved 
 |----------|----------|
 | [code-review-template.md](code-review-template.md) | Full code review report template with field descriptions |
 | [retro-template.md](retro-template.md) | Full retrospective template with completion checklist |
+| [edge-function-test.md](edge-function-test.md) | Edge Function test scaffold generator with vi.hoisted() pattern |
 
 ---
 
@@ -292,6 +298,7 @@ This skill activates automatically during:
 1. **Code reviews** - Creates Linear issues for ALL findings
 2. **Pre-commit** - Reminds about checklist
 3. **Quality discussions** - References authoritative standards
+4. **Edge Function testing** - Generates test scaffolds with proper Deno mocking
 
 ## Full Standards
 
@@ -332,6 +339,12 @@ See [scripts/git-hooks/README.md](../../../scripts/git-hooks/README.md) for deta
 ---
 
 ## Changelog
+
+### v1.3.0 (2026-01-27)
+- **Added**: `edge-function-test.md` subskill for Edge Function test scaffolds (SMI-1877)
+- **Added**: `templates/edge-function-test-template.ts` with vi.hoisted() pattern
+- **Added**: `/edge-test` explicit command
+- **Added**: Trigger phrases: "test edge function", "mock Deno", "Deno is not defined"
 
 ### v1.2.0 (2026-01-24)
 - **Refactored**: Split templates into sub-documentation files (SMI-1783)
