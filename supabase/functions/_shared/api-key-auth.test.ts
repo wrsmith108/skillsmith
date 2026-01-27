@@ -84,6 +84,39 @@ describe('extractApiKey', () => {
     })
   })
 
+  // SMI-1875: Malformed Bearer token tests
+  describe('malformed Bearer tokens', () => {
+    it('should return null for Bearer without key', () => {
+      const req = new Request('https://example.com', {
+        headers: { Authorization: 'Bearer' },
+      })
+
+      const result = extractApiKey(req)
+
+      expect(result).toBeNull()
+    })
+
+    it('should return null for Bearer with only space', () => {
+      const req = new Request('https://example.com', {
+        headers: { Authorization: 'Bearer ' },
+      })
+
+      const result = extractApiKey(req)
+
+      expect(result).toBeNull()
+    })
+
+    it('should return null for Bearer with whitespace key', () => {
+      const req = new Request('https://example.com', {
+        headers: { Authorization: 'Bearer   ' },
+      })
+
+      const result = extractApiKey(req)
+
+      expect(result).toBeNull()
+    })
+  })
+
   describe('no API key', () => {
     it('should return null when no headers present', () => {
       const req = new Request('https://example.com')

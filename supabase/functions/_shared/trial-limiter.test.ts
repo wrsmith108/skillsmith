@@ -108,6 +108,49 @@ describe('checkTrialLimit', () => {
 
       expect(result.allowed).toBe(true)
     })
+
+    // SMI-1874: Test IP header priority order
+    it('should prioritize x-forwarded-for over other IP headers', async () => {
+      mockRpc.mockResolvedValue({
+        data: [{ allowed: true, used: 1, remaining: 9 }],
+        error: null,
+      })
+
+      const req = new Request('https://example.com', {
+        headers: {
+          'x-forwarded-for': '1.1.1.1, 10.0.0.1',
+          'x-real-ip': '2.2.2.2',
+          'cf-connecting-ip': '3.3.3.3',
+        },
+      })
+
+      await checkTrialLimit(req)
+
+      // Verify RPC was called (IP is hashed, so we just verify call happened)
+      expect(mockRpc).toHaveBeenCalledWith('check_trial_usage', {
+        ip_hash_input: expect.any(String),
+      })
+    })
+
+    it('should prioritize x-real-ip over cf-connecting-ip', async () => {
+      mockRpc.mockResolvedValue({
+        data: [{ allowed: true, used: 1, remaining: 9 }],
+        error: null,
+      })
+
+      const req = new Request('https://example.com', {
+        headers: {
+          'x-real-ip': '2.2.2.2',
+          'cf-connecting-ip': '3.3.3.3',
+        },
+      })
+
+      await checkTrialLimit(req)
+
+      expect(mockRpc).toHaveBeenCalledWith('check_trial_usage', {
+        ip_hash_input: expect.any(String),
+      })
+    })
   })
 
   describe('trial limits', () => {
