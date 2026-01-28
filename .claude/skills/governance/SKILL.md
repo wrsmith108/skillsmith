@@ -1,6 +1,6 @@
 ---
 name: "Governance"
-version: "1.3.0"
+version: "1.4.0"
 description: "Enforces engineering standards and code quality policies. Use during code reviews, before commits, when discussing standards or compliance, and for quality audits."
 category: development
 tags:
@@ -43,11 +43,14 @@ composes:
 
 This skill executes automatically without asking for permission. When triggered during code review:
 1. All issues are identified (critical, major, minor)
-2. Each issue is immediately actioned: **fixed** or **Linear ticket created**
-3. Results are reported
+2. **ALL issues are immediately FIXED** - no deferral, no "later"
+3. Results are reported with commit hashes
 
 **Anti-pattern**: "Would you like me to fix these issues?"
-**Correct pattern**: "Found 5 issues. Fixing 2 high-severity now. Created SMI-1234, SMI-1235 for 3 medium/low."
+**Anti-pattern**: "Created SMI-1234 to track this for later."
+**Correct pattern**: "Found 5 issues. Fixing all 5 now. Commits: abc123, def456."
+
+**🚨 ZERO DEFERRAL POLICY**: Do not create Linear tickets for code review findings. Fix them immediately. The only exception is if the fix requires architectural changes that would expand scope beyond the current PR - and even then, implement a minimal fix now.
 
 ---
 
@@ -163,86 +166,56 @@ The `npm run audit:standards` command verifies:
 
 ## Code Review Workflow
 
-**IMPORTANT: All issues require resolution OR tracking before PR merge.**
+**IMPORTANT: All issues are FIXED before PR merge. No deferral.**
 
-**⚠️ EXECUTE, DON'T ASK**: This workflow is mandatory. Do NOT ask "would you like me to fix these?" or "should I create Linear tickets?" - just execute the workflow. The user expects you to follow governance automatically.
+**⚠️ EXECUTE, DON'T DEFER**: This workflow is mandatory. Do NOT ask "would you like me to fix these?" and do NOT create Linear tickets for findings. Fix everything immediately.
 
 When performing a code review:
 
 1. **Identify ALL issues** - Critical, major, and minor severity
-2. **For EACH issue, immediately do ONE of:**
-   - **Fix it now** - Implement the fix before moving on
-   - **Create a Linear issue** - If deferring, create the issue IMMEDIATELY
-3. **No "deferred" without a ticket** - "Deferred" without documentation = forgotten
-4. **Re-review after fixes** - Verify each fix addresses the issue
-
+2. **Fix EVERY issue immediately** - No exceptions, no deferral
+3. **Commit each fix** - Include the fix in the PR before approval
 **Anti-pattern (NEVER do this):**
 > "I found 5 issues. Would you like me to fix them or create tickets?"
 
-**Correct pattern:**
-> "Found 5 issues. Fixing 2 high-severity now. Creating Linear tickets for 3 medium/low."
-
-### The Deferred Issue Rule
-
-**"Deferred" is not a resolution. A Linear issue number is.**
-
-When you identify an issue that won't be fixed in the current PR:
-1. Stop what you're doing
-2. Create the Linear sub-issue immediately
-3. Note the issue number (e.g., SMI-1234) in your review
-4. Only then continue with the review
-
-```bash
-# Create sub-issue immediately when deferring
-npx tsx ~/.claude/skills/linear/scripts/linear-ops.ts create-sub-issue SMI-XXX "Issue title" "Description" --priority 3
-```
-
 **Anti-pattern (NEVER do this):**
-> "This is a minor issue, we can address it later."
-
-**Correct pattern:**
 > "Created SMI-1234 to track this. Deferring to post-merge."
 
-### Issue Creation Template
+**Correct pattern:**
+> "Found 5 issues. Fixing all 5 now. Commits: abc123, def456, ghi789."
 
-```
-Title: [Code Review] <brief description>
-Description:
-- File: <path>
-- Line: <number>
-- Issue: <what's wrong>
-- Fix: <suggested resolution>
-- Standard: §<section> from standards.md
-```
+### Zero Deferral Policy
+
+**All findings are fixed immediately. No Linear tickets for code review findings.**
+
+This ensures:
+- Issues don't accumulate in the backlog
+- Code quality is maintained at merge time
+- Reviewers take ownership of quality
+
+**Exception**: Only defer if the fix requires architectural changes that would significantly expand PR scope. Even then, implement a minimal fix first.
 
 ### Severity Guide (SMI-1726)
 
 | Severity | Action | Examples |
 |----------|--------|----------|
-| Critical | Fix before merge (blocking) | Security vulnerabilities, data loss risks |
-| High | Fix before merge (blocking) | Missing tests, type safety issues |
-| Medium | **Fix OR create Linear issue** | Architecture issues, style problems |
-| Low | **Fix OR create Linear issue** | Minor refactors, documentation gaps |
+| Critical | **Fix immediately** | Security vulnerabilities, data loss risks |
+| High | **Fix immediately** | Missing tests, type safety issues |
+| Medium | **Fix immediately** | Architecture issues, style problems |
+| Low | **Fix immediately** | Minor refactors, documentation gaps |
 
-**🚨 MANDATORY: Every finding gets either a fix or a Linear ticket. No exceptions.**
-
-```bash
-# Create Linear issue for non-blocking finding
-node ~/.claude/skills/linear/scripts/linear-api.mjs create-issue \
-  --team SMI \
-  --title "[Code Review] Finding title" \
-  --description "Details..." \
-  --priority 3  # 3=medium, 4=low
-```
+**🚨 ALL SEVERITIES ARE FIXED. NO EXCEPTIONS.**
 
 ### Code Review Completion Checklist
 
 Before marking a code review complete:
 
-- [ ] All critical issues fixed
-- [ ] All major issues either fixed OR have Linear tickets
-- [ ] All minor issues either fixed OR have Linear tickets
-- [ ] Each deferred issue has a ticket number documented
+- [ ] All critical issues **fixed** (with commit hash)
+- [ ] All high issues **fixed** (with commit hash)
+- [ ] All medium issues **fixed** (with commit hash)
+- [ ] All low issues **fixed** (with commit hash)
+- [ ] Lint passes after all fixes
+- [ ] Typecheck passes after all fixes
 - [ ] Re-review confirms fixes are correct
 - [ ] **Code review report written to `docs/code_review/`**
 
@@ -339,6 +312,13 @@ See [scripts/git-hooks/README.md](../../../scripts/git-hooks/README.md) for deta
 ---
 
 ## Changelog
+
+### v1.4.0 (2026-01-28)
+- **Breaking**: Zero Deferral Policy - all code review findings must be fixed immediately
+- **Removed**: Linear ticket creation for deferred issues
+- **Updated**: Severity guide - all severities now require immediate fix
+- **Updated**: Completion checklist - removed deferral options
+- **Updated**: Behavioral Classification to emphasize execution over deferral
 
 ### v1.3.0 (2026-01-27)
 - **Added**: `edge-function-test.md` subskill for Edge Function test scaffolds (SMI-1877)
