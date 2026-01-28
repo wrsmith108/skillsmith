@@ -17,12 +17,7 @@
  * - tier: string - User's current tier
  */
 
-import {
-  createSupabaseClient,
-  createSupabaseAdminClient,
-  logInvocation,
-  getRequestId,
-} from '../_shared/supabase.ts'
+import { createSupabaseAdminClient, logInvocation, getRequestId } from '../_shared/supabase.ts'
 import {
   handleCorsPreflightRequest,
   jsonResponse,
@@ -63,24 +58,77 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    // Get user from auth token
-    const supabase = createSupabaseClient(authHeader)
+    // Get user from auth token using admin client
+    const token = authHeader.replace('Bearer ', '')
+
+    // Decode JWT to inspect (without verification) for debugging
+    let tokenPayload: Record<string, unknown> | null = null
+    try {
+      const parts = token.split('.')
+      if (parts.length === 3) {
+        const payload = parts[1]
+        const decoded = atob(payload.replace(/-/g, '+').replace(/_/g, '/'))
+        tokenPayload = JSON.parse(decoded)
+      }
+    } catch (e) {
+      console.error('Failed to decode token:', e)
+    }
+
+    console.log('Token debug:', {
+      tokenLength: token?.length,
+      tokenParts: token?.split('.').length,
+      payload: tokenPayload
+        ? {
+            sub: tokenPayload.sub,
+            email: tokenPayload.email,
+            role: tokenPayload.role,
+            exp: tokenPayload.exp,
+            iat: tokenPayload.iat,
+            aud: tokenPayload.aud,
+          }
+        : null,
+      isExpired: tokenPayload?.exp ? (tokenPayload.exp as number) < Date.now() / 1000 : 'unknown',
+    })
+
+    // Use admin client to validate token
+    const adminClient = createSupabaseAdminClient()
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser()
+    } = await adminClient.auth.getUser(token)
+
+    console.log('getUser result:', {
+      hasUser: !!user,
+      userId: user?.id,
+      errorMessage: authError?.message,
+      errorName: authError?.name,
+    })
 
     if (authError || !user) {
-      return errorResponse('Invalid or expired token', 401, undefined, origin)
+      return errorResponse(
+        'Invalid or expired token',
+        401,
+        {
+          debug: {
+            errorMessage: authError?.message,
+            tokenSub: tokenPayload?.sub,
+            tokenExp: tokenPayload?.exp,
+          },
+        },
+        origin
+      )
     }
 
-    // Get user's profile to check tier
-    const adminClient = createSupabaseAdminClient()
+    // Get user's profile to check tier (reuse adminClient from auth)
+    console.log('Fetching profile for user:', user.id)
+
     const { data: profile, error: profileError } = await adminClient
       .from('profiles')
       .select('tier')
       .eq('id', user.id)
       .single()
+
+    console.log('Profile fetch result:', { profile, profileError })
 
     if (profileError || !profile) {
       return errorResponse('User profile not found', 404, undefined, origin)
@@ -128,46 +176,103 @@ Deno.serve(async (req: Request) => {
     const { key, prefix } = generateLicenseKey()
     const keyHash = await hashLicenseKey(key)
 
-    // Store the key
-    const { data: newKey, error: insertError } = await adminClient
-      .from('license_keys')
-      .insert({
-        user_id: user.id,
-        key_hash: keyHash,
-        key_prefix: prefix,
-        name: keyName,
-        tier,
-        status: 'active',
-        rate_limit_per_minute: getRateLimitForTier(tier),
-        metadata: {
-          generated_via: 'api',
-          generated_at: new Date().toISOString(),
-        },
-      })
-      .select('id, key_prefix, name, tier, rate_limit_per_minute, created_at')
-      .single()
+    console.log('Generated key with prefix:', prefix)
+    console.log('Attempting insert with:', {
+      user_id: user.id,
+      key_prefix: prefix,
+      name: keyName,
+      tier,
+      rate_limit: getRateLimitForTier(tier),
+    })
+
+    // Store the key - use separate INSERT and SELECT for robustness
+    // The combined .insert().select() pattern can fail due to RLS on RETURNING clause
+    const { error: insertError } = await adminClient.from('license_keys').insert({
+      user_id: user.id,
+      key_hash: keyHash,
+      key_prefix: prefix,
+      name: keyName,
+      tier,
+      status: 'active',
+      rate_limit_per_minute: getRateLimitForTier(tier),
+      metadata: {
+        generated_via: 'api',
+        generated_at: new Date().toISOString(),
+      },
+    })
 
     if (insertError) {
-      console.error('Failed to create key:', insertError)
+      console.error('Failed to create key:', {
+        code: insertError.code,
+        message: insertError.message,
+        details: insertError.details,
+        hint: insertError.hint,
+        userId: user.id,
+        tier,
+      })
+
+      // Specific error handling for known PostgreSQL error codes
+      if (insertError.code === '23505') {
+        // Unique constraint violation - key already exists
+        return errorResponse(
+          'Key already exists. Please refresh and try again.',
+          409,
+          undefined,
+          origin
+        )
+      }
+      if (insertError.code === '23503') {
+        // Foreign key violation - user profile doesn't exist
+        return errorResponse('User profile not found', 404, undefined, origin)
+      }
+      if (insertError.code === '42501') {
+        // Insufficient privilege - RLS or permission issue
+        return errorResponse('Permission denied. Please contact support.', 403, undefined, origin)
+      }
+
       return errorResponse('Failed to generate key', 500, undefined, origin)
     }
 
-    console.log('License key generated', {
-      userId: user.id,
-      keyId: newKey.id,
-      tier,
-    })
+    // Fetch the created key separately to avoid RLS issues with RETURNING clause
+    const { data: newKey, error: fetchError } = await adminClient
+      .from('license_keys')
+      .select('id, key_prefix, name, tier, rate_limit_per_minute, created_at')
+      .eq('key_hash', keyHash)
+      .single()
 
-    // Return the key - this is the ONLY time the full key is shown!
-    const responseData = {
-      key, // Full key - only shown once!
-      id: newKey.id,
-      prefix: newKey.key_prefix,
-      name: newKey.name,
-      tier: newKey.tier,
-      rateLimit: newKey.rate_limit_per_minute,
-      createdAt: newKey.created_at,
-      warning: 'Save this key securely. It will not be shown again.',
+    // Prepare response data
+    let responseData: Record<string, unknown>
+
+    if (fetchError || !newKey) {
+      // Key was created but couldn't be fetched - still return success with generated values
+      console.warn('Key created but fetch failed:', fetchError)
+      responseData = {
+        key, // Full key - only shown once!
+        prefix,
+        name: keyName,
+        tier,
+        rateLimit: getRateLimitForTier(tier),
+        createdAt: new Date().toISOString(),
+        warning: 'Save this key securely. It will not be shown again.',
+      }
+    } else {
+      console.log('License key generated', {
+        userId: user.id,
+        keyId: newKey.id,
+        tier,
+      })
+
+      // Return the key - this is the ONLY time the full key is shown!
+      responseData = {
+        key, // Full key - only shown once!
+        id: newKey.id,
+        prefix: newKey.key_prefix,
+        name: newKey.name,
+        tier: newKey.tier,
+        rateLimit: newKey.rate_limit_per_minute,
+        createdAt: newKey.created_at,
+        warning: 'Save this key securely. It will not be shown again.',
+      }
     }
 
     const jsonRes = jsonResponse(responseData)

@@ -388,6 +388,18 @@ verify_jwt = false
 [functions.stripe-webhook]
 verify_jwt = false
 
+[functions.health]
+verify_jwt = false
+
+# SMI-1906: generate-license validates JWT internally using adminClient.auth.getUser(token)
+# Gateway JWT validation rejects frontend auth tokens, so we bypass it and validate in code
+[functions.generate-license]
+verify_jwt = false
+
+# SMI-1907: regenerate-license - same pattern as generate-license
+[functions.regenerate-license]
+verify_jwt = false
+
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
