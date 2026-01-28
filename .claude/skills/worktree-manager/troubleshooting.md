@@ -166,6 +166,28 @@ docker compose --profile dev down
 docker compose --profile dev up -d
 ```
 
+### Issue: Docker lint/typecheck verifies main repo, not worktree
+
+**Cause**: Docker container mounts the main repo at `/app`, so `docker exec skillsmith-dev-1 npm run lint` checks main repo files, not your worktree changes.
+
+**Solution**: Use the worktree-check script for local verification:
+
+```bash
+# Run lint/typecheck directly in worktree (no Docker needed)
+./scripts/worktree-check.sh ../worktrees/my-feature
+
+# Or from within the worktree
+cd ../worktrees/my-feature
+../../scripts/worktree-check.sh
+```
+
+**Note**: Lint, typecheck, and format checks don't require native modules, so they can run locally without Docker. For tests that need native modules (better-sqlite3, onnxruntime), push the branch and verify in CI.
+
+**What the script runs**:
+1. `npx tsc --noEmit` - TypeScript type checking
+2. `npx eslint . --max-warnings 0` - Linting
+3. `npx prettier --check ...` - Format checking
+
 ### Issue: Container won't start in worktree
 
 **Cause**: Port conflicts with main repo container or missing volumes
