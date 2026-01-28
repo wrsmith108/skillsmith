@@ -382,6 +382,12 @@ verify_jwt = false
 [functions.stats]
 verify_jwt = false
 
+[functions.checkout]
+verify_jwt = false
+
+[functions.stripe-webhook]
+verify_jwt = false
+
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
