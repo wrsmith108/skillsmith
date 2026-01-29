@@ -2,7 +2,7 @@
  * API Key Authentication Helper
  * @module _shared/api-key-auth
  *
- * SMI-XXXX: API Key Authentication
+ * SMI-1872: API Key Authentication
  * SMI-1950: Recognize Supabase anon key as community-tier access
  *
  * Validates X-API-Key headers against license_keys table.
