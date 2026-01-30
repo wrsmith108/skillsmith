@@ -5,6 +5,7 @@
  * SMI-1177: Stripe webhook handlers
  * SMI-1164: License key delivery after payment
  * SMI-1836: E2E testing verified
+ * SMI-2068: Added idempotency handling for Stripe event retries
  *
  * Handles:
  * - checkout.session.completed: Create subscription and generate license key
@@ -140,26 +141,40 @@ Deno.serve(async (req: Request) => {
         // Get subscription details from Stripe
         const subscription = await stripe.subscriptions.retrieve(subscriptionId)
 
-        // Create subscription record
-        const { error: subError } = await supabase.from('subscriptions').insert({
-          user_id: userId,
-          stripe_customer_id: customerId,
-          stripe_subscription_id: subscriptionId,
-          tier,
-          status: subscription.status,
-          billing_period: billingPeriod,
-          seat_count: seatCount,
-          current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-          current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-          cancel_at_period_end: subscription.cancel_at_period_end,
-          metadata: {
-            checkout_session_id: session.id,
-          },
-        })
+        // Idempotency check: See if subscription already exists (handles Stripe retries)
+        const { data: existingSub } = await supabase
+          .from('subscriptions')
+          .select('id')
+          .eq('stripe_subscription_id', subscriptionId)
+          .single()
 
-        if (subError) {
-          console.error('Failed to create subscription:', subError)
-          throw subError
+        if (existingSub) {
+          console.log('Subscription already exists (duplicate event), skipping creation', {
+            subscriptionId,
+            existingId: existingSub.id,
+          })
+        } else {
+          // Create subscription record
+          const { error: subError } = await supabase.from('subscriptions').insert({
+            user_id: userId,
+            stripe_customer_id: customerId,
+            stripe_subscription_id: subscriptionId,
+            tier,
+            status: subscription.status,
+            billing_period: billingPeriod,
+            seat_count: seatCount,
+            current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+            current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+            cancel_at_period_end: subscription.cancel_at_period_end,
+            metadata: {
+              checkout_session_id: session.id,
+            },
+          })
+
+          if (subError) {
+            console.error('Failed to create subscription:', subError)
+            throw subError
+          }
         }
 
         // Update user's tier
@@ -172,10 +187,6 @@ Deno.serve(async (req: Request) => {
           console.error('Failed to update profile tier:', profileError)
         }
 
-        // Generate license key
-        const { key: licenseKey, prefix: keyPrefix } = generateLicenseKey()
-        const keyHash = await hashLicenseKey(licenseKey)
-
         // Get subscription record to link the key
         const { data: subRecord } = await supabase
           .from('subscriptions')
@@ -183,24 +194,73 @@ Deno.serve(async (req: Request) => {
           .eq('stripe_subscription_id', subscriptionId)
           .single()
 
-        const { error: keyError } = await supabase.from('license_keys').insert({
-          user_id: userId,
-          subscription_id: subRecord?.id || null,
-          key_hash: keyHash,
-          key_prefix: keyPrefix,
-          name: 'Default License Key',
-          tier,
-          status: 'active',
-          rate_limit_per_minute: getRateLimitForTier(tier),
-          metadata: {
-            stripe_subscription_id: subscriptionId,
-            generated_at: new Date().toISOString(),
-            // Note: The actual key was sent via email (see TODO below)
-          },
-        })
+        // Idempotency check: See if license key already exists for this subscription
+        const { data: existingKey } = await supabase
+          .from('license_keys')
+          .select('key_prefix')
+          .eq('user_id', userId)
+          .eq('tier', tier)
+          .eq('status', 'active')
+          .single()
 
-        if (keyError) {
-          console.error('Failed to create license key:', keyError)
+        let keyPrefix: string
+        let licenseKey: string | null = null
+
+        if (existingKey) {
+          console.log('License key already exists (duplicate event), skipping creation', {
+            userId,
+            tier,
+            existingKeyPrefix: existingKey.key_prefix,
+          })
+          keyPrefix = existingKey.key_prefix
+          // Don't send welcome email again - user already received it
+        } else {
+          // Generate new license key
+          const generatedKey = generateLicenseKey()
+          licenseKey = generatedKey.key
+          keyPrefix = generatedKey.prefix
+          const keyHash = await hashLicenseKey(licenseKey)
+
+          const { error: keyError } = await supabase.from('license_keys').insert({
+            user_id: userId,
+            subscription_id: subRecord?.id || null,
+            key_hash: keyHash,
+            key_prefix: keyPrefix,
+            name: 'Default License Key',
+            tier,
+            status: 'active',
+            rate_limit_per_minute: getRateLimitForTier(tier),
+            metadata: {
+              stripe_subscription_id: subscriptionId,
+              generated_at: new Date().toISOString(),
+            },
+          })
+
+          if (keyError) {
+            console.error('Failed to create license key:', keyError)
+          } else {
+            // Send welcome email with license key (only for new keys)
+            // The license key is included in this email since it's only shown once
+            // Email failures are logged but don't fail the webhook
+            const emailSent = await sendWelcomeEmail({
+              to: customerEmail,
+              licenseKey,
+              tier,
+              customerName: session.customer_details?.name || undefined,
+              billingPeriod,
+              seatCount,
+            })
+
+            if (emailSent) {
+              console.log('Welcome email sent successfully', { email: customerEmail, keyPrefix })
+            } else {
+              // Email failed but don't fail the webhook - user can retrieve key from dashboard
+              console.warn('Failed to send welcome email (non-fatal)', {
+                email: customerEmail,
+                keyPrefix,
+              })
+            }
+          }
         }
 
         console.log('Checkout completed successfully', {
@@ -208,29 +268,8 @@ Deno.serve(async (req: Request) => {
           tier,
           subscriptionId,
           keyPrefix,
+          wasIdempotent: !licenseKey,
         })
-
-        // Send welcome email with license key
-        // The license key is included in this email since it's only shown once
-        // Email failures are logged but don't fail the webhook
-        const emailSent = await sendWelcomeEmail({
-          to: customerEmail,
-          licenseKey,
-          tier,
-          customerName: session.customer_details?.name || undefined,
-          billingPeriod,
-          seatCount,
-        })
-
-        if (emailSent) {
-          console.log('Welcome email sent successfully', { email: customerEmail, keyPrefix })
-        } else {
-          // Email failed but don't fail the webhook - user can retrieve key from dashboard
-          console.warn('Failed to send welcome email (non-fatal)', {
-            email: customerEmail,
-            keyPrefix,
-          })
-        }
 
         break
       }
