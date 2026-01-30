@@ -6,6 +6,7 @@
  * SMI-1164: License key delivery after payment
  * SMI-1836: E2E testing verified
  * SMI-2068: Added idempotency handling for Stripe event retries
+ * SMI-2069: Filter non-Skillsmith events (Substack uses same Stripe account)
  *
  * Handles:
  * - checkout.session.completed: Create subscription and generate license key
@@ -69,6 +70,15 @@ Deno.serve(async (req: Request) => {
         // Only handle subscription checkouts
         if (session.mode !== 'subscription') {
           console.log('Ignoring non-subscription checkout')
+          break
+        }
+
+        // Only handle Skillsmith checkouts (filter out Substack, etc.)
+        if (session.metadata?.source !== 'skillsmith-website') {
+          console.log('Ignoring non-Skillsmith checkout', {
+            source: session.metadata?.source || 'none',
+            sessionId: session.id,
+          })
           break
         }
 
@@ -277,6 +287,20 @@ Deno.serve(async (req: Request) => {
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription
 
+        // Check if this subscription exists in our database (filters out Substack, etc.)
+        const { data: existingSubRecord } = await supabase
+          .from('subscriptions')
+          .select('id')
+          .eq('stripe_subscription_id', subscription.id)
+          .single()
+
+        if (!existingSubRecord) {
+          console.log('Ignoring subscription update for non-Skillsmith subscription', {
+            subscriptionId: subscription.id,
+          })
+          break
+        }
+
         console.log('Subscription updated', {
           subscriptionId: subscription.id,
           status: subscription.status,
@@ -328,6 +352,20 @@ Deno.serve(async (req: Request) => {
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription
 
+        // Check if this subscription exists in our database (filters out Substack, etc.)
+        const { data: existingSubForDelete } = await supabase
+          .from('subscriptions')
+          .select('id')
+          .eq('stripe_subscription_id', subscription.id)
+          .single()
+
+        if (!existingSubForDelete) {
+          console.log('Ignoring subscription deletion for non-Skillsmith subscription', {
+            subscriptionId: subscription.id,
+          })
+          break
+        }
+
         console.log('Subscription deleted', { subscriptionId: subscription.id })
 
         // Mark subscription as canceled
@@ -363,6 +401,23 @@ Deno.serve(async (req: Request) => {
       case 'invoice.payment_succeeded': {
         const invoice = event.data.object as Stripe.Invoice
 
+        // Only process invoices for Skillsmith subscriptions
+        if (invoice.subscription) {
+          const { data: subForInvoice } = await supabase
+            .from('subscriptions')
+            .select('id')
+            .eq('stripe_subscription_id', invoice.subscription)
+            .single()
+
+          if (!subForInvoice) {
+            console.log('Ignoring invoice for non-Skillsmith subscription', {
+              invoiceId: invoice.id,
+              subscriptionId: invoice.subscription,
+            })
+            break
+          }
+        }
+
         console.log('Payment succeeded', {
           invoiceId: invoice.id,
           subscriptionId: invoice.subscription,
@@ -390,6 +445,23 @@ Deno.serve(async (req: Request) => {
 
       case 'invoice.payment_failed': {
         const invoice = event.data.object as Stripe.Invoice
+
+        // Only process invoices for Skillsmith subscriptions
+        if (invoice.subscription) {
+          const { data: subForFailedInvoice } = await supabase
+            .from('subscriptions')
+            .select('id')
+            .eq('stripe_subscription_id', invoice.subscription)
+            .single()
+
+          if (!subForFailedInvoice) {
+            console.log('Ignoring failed invoice for non-Skillsmith subscription', {
+              invoiceId: invoice.id,
+              subscriptionId: invoice.subscription,
+            })
+            break
+          }
+        }
 
         console.log('Payment failed', {
           invoiceId: invoice.id,
